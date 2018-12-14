@@ -131,8 +131,6 @@ public class MainActivity extends AppCompatActivity {
 		mActivity=this;
         mGp=GlobalWorkArea.getGlobalParameters(mContext);
 
-//        getWindow().setNavigationBarColor(Color.BLACK);
-
         mUtil=mGp.mUtil=new CommonUtilities(mContext, "Main", mGp);
 		setContentView(R.layout.main);
         mUiHandler=new Handler();
@@ -475,6 +473,7 @@ public class MainActivity extends AppCompatActivity {
 
 	private void createTabAndView() {
 		mGp.themeColorList = ThemeUtil.getThemeColorList(mActivity);
+//        getWindow().setNavigationBarColor(mGp.themeColorList.window_background_color_content);
 
         mGp.tabHost =(TabHost)findViewById(android.R.id.tabhost);
         mGp.tabHost.setup();

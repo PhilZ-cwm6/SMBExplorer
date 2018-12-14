@@ -617,11 +617,21 @@ public class FileManager {
             if (mGp.localFileListAdapter.isItemSelected()) {
                 mGp.localFileListAdapter.setAllItemChecked(false);
                 result=true;
+            } else {
+                if (mGp.localFileListUpBtn.isEnabled()) {
+                    processLocalUpButton();
+                    result=true;
+                }
             }
         } else if (mGp.currentTabName.equals(SMBEXPLORER_TAB_REMOTE)) {
             if (mGp.remoteFileListAdapter.isItemSelected()) {
                 mGp.remoteFileListAdapter.setAllItemChecked(false);
                 result=true;
+            } else {
+                if (mGp.remoteFileListUpBtn.isEnabled()) {
+                    processRemoteUpButton();
+                    result=true;
+                }
             }
         }
         return result;
