@@ -38,6 +38,7 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
+import com.sentaroh.android.SMBExplorer.Log.LogUtil;
 import com.sentaroh.android.Utilities.NotifyEvent;
 import com.sentaroh.android.Utilities.ThreadCtrl;
 import com.sentaroh.jcifs.JcifsAuth;
@@ -83,6 +84,7 @@ public class FileIo extends Thread {
 	private Handler uiHandler = new Handler() ;
 	private GlobalParameters mGp=null;
 	private final static String mAppPackageName="com.sentaroh.android.SMBExplorer";
+	private LogUtil mLogUtil=null;
 	
 	// @Override
 	public FileIo(GlobalParameters gp, int op_cd,
@@ -95,7 +97,9 @@ public class FileIo extends Thread {
 		notifyEvent=ne;
 		
 		mContext=cc;
-		
+
+		mLogUtil=new LogUtil(mContext, "FILEIO", mGp);
+
 		mediaScanner = new MediaScannerConnection(mContext, new MediaScannerConnectionClient() {
 			@Override
 			public void onMediaScannerConnected() {
@@ -284,15 +288,13 @@ public class FileIo extends Thread {
 	}
 
 	private void sendLogMsg(final String log_cat, final String log_msg) {
-		String m_txt=log_cat+" "+"FileIO  "+" "+log_msg;
-		Log.v(DEBUG_TAG,m_txt);
+        mLogUtil.addLogMsg(log_cat, log_msg);
 	}
 
 	private void sendDebugLogMsg(int lvl, final String log_cat, final String log_msg) {
 
 		if (mGp.settingDebugLevel>0) {
-			String m_txt=log_cat+" "+"FileIO  "+" "+log_msg;
-			Log.v(DEBUG_TAG,m_txt);
+            mLogUtil.addDebugMsg(lvl, log_cat, log_msg);
 		}
 	}
 	
@@ -313,11 +315,11 @@ public class FileIo extends Thread {
     		String saf_msg="";
             if (newUrl.startsWith(mGp.safMgr.getUsbRootPath())) {
                 SafFile csf=mGp.safMgr.createUsbDirectory(newUrl);
-                saf_msg=csf==null?"":csf.getMessages();
+                saf_msg=csf==null?"":csf.getLastErrorMessage();
                 result=csf==null?false:true;
             } else if (Build.VERSION.SDK_INT>=21 && newUrl.startsWith(mGp.safMgr.getSdcardRootPath())) {
                 SafFile csf=mGp.safMgr.createSdcardDirectory(newUrl);
-                saf_msg=csf==null?"":csf.getMessages();
+                saf_msg=csf==null?"":csf.getLastErrorMessage();
                 result=csf==null?false:true;
             } else result=lf.mkdir();
     		if (!result) {
@@ -402,8 +404,8 @@ public class FileIo extends Thread {
             if (result) {
                 sendLogMsg("I",oldUrl+" was renamed to "+newUrl);
             } else {
-                sendLogMsg("I","Rename was failed, from="+oldUrl+" to="+newUrl+"\n"+document.getMessages());
-                fileioThreadCtrl.setThreadMessage("Rename was failed, from="+oldUrl+" to="+newUrl+"\n"+document.getMessages());
+                sendLogMsg("I","Rename was failed, from="+oldUrl+" to="+newUrl+"\n"+document.getLastErrorMessage());
+                fileioThreadCtrl.setThreadMessage("Rename was failed, from="+oldUrl+" to="+newUrl+"\n"+document.getLastErrorMessage());
             }
         } else if (Build.VERSION.SDK_INT>=21 && newUrl.startsWith(mGp.safMgr.getSdcardRootPath())) {
             boolean isDirectory=(new File(oldUrl)).isDirectory();
@@ -1251,7 +1253,7 @@ public class FileIo extends Thread {
     private boolean copyFileLocalToSdcard_API24(File iLf, String fromUrl, String toUrl, String title_header) throws IOException, JcifsException {
         long b_time=System.currentTimeMillis();
         boolean result=false;
-        File tmp_file=new File(mGp.safMgr.getSdcardRootPath()+"/"+APP_SPECIFIC_DIRECTORY+"/files/temp.file");
+        File tmp_file=new File(mGp.safMgr.getSdcardRootPath()+"/"+APP_SPECIFIC_DIRECTORY+"/files/"+System.currentTimeMillis());
         SafFile temp_saf = mGp.safMgr.createSdcardItem(tmp_file.getPath(), false);
         OutputStream bos = new FileOutputStream(tmp_file);
 //        BufferedOutputStream bos=new BufferedOutputStream(os, 1024*1024*8);
@@ -1275,7 +1277,7 @@ public class FileIo extends Thread {
         return result;
     }
 
-	private boolean copyFileRemoteToRemote(JcifsFile ihf, JcifsFile ohf,String fromUrl, String toUrl, String title_header) throws IOException, JcifsException {
+    private boolean copyFileRemoteToRemote(JcifsFile ihf, JcifsFile ohf,String fromUrl, String toUrl, String title_header) throws IOException, JcifsException {
         long b_time=System.currentTimeMillis();
 	    InputStream bis = ihf.getInputStream();
 	    OutputStream bos = ohf.getOutputStream();

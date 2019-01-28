@@ -35,6 +35,7 @@ import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.provider.MediaStore;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.CheckedTextView;
@@ -44,8 +45,14 @@ import com.sentaroh.android.Utilities.ThreadCtrl;
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
 
 import java.io.File;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 
+import static com.sentaroh.android.SMBExplorer.Constants.APPLICATION_TAG;
 import static com.sentaroh.android.SMBExplorer.Constants.DEFAULT_PREFS_FILENAME;
 
 public final class CommonUtilities {
@@ -138,8 +145,34 @@ public final class CommonUtilities {
 	final public String getLogFilePath() {
 		return mLog.getLogFilePath();
 	};
-	
-	static public long getSettingsParmSaveDate(Context c, String dir, String fn) {
+
+    public static String getIfIpAddress(String if_name) {
+        String result = "";
+        boolean exit = false;
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
+                NetworkInterface intf = en.nextElement();
+                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+//	            	Log.v("SMBSync2","ip="+inetAddress.getHostAddress()+", name="+intf.getName());
+                    if (inetAddress.isSiteLocalAddress() && (inetAddress instanceof Inet4Address)) {
+                        if (intf.getName().equalsIgnoreCase(if_name)) {
+                            result = inetAddress.getHostAddress();
+                            exit = true;
+                            break;
+                        }
+                    }
+                }
+                if (exit) break;
+            }
+        } catch (SocketException ex) {
+            Log.e(APPLICATION_TAG, ex.toString());
+//            result = "192.168.0.1";
+        }
+        return result;
+    }
+
+    static public long getSettingsParmSaveDate(Context c, String dir, String fn) {
 		File lf=new File(dir+"/"+fn);
 		long result=0;
 		if (lf.exists()) {

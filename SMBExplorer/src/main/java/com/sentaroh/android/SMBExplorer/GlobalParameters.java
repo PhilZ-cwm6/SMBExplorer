@@ -38,6 +38,7 @@ import android.widget.TabHost;
 import android.widget.TabWidget;
 import android.widget.TextView;
 
+import com.sentaroh.android.SMBExplorer.Log.LogUtil;
 import com.sentaroh.android.Utilities.CommonGlobalParms;
 import com.sentaroh.android.Utilities.Dialog.CommonDialog;
 import com.sentaroh.android.Utilities.ThemeColorList;
@@ -45,6 +46,7 @@ import com.sentaroh.android.Utilities.Widget.CustomTextView;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.LoggerWriter;
 
 import java.util.ArrayList;
 
@@ -186,7 +188,7 @@ public class GlobalParameters extends CommonGlobalParms{
 
     public GlobalParameters() {};
 
-    private static Logger log = LoggerFactory.getLogger(GlobalParameters.class);
+    private static Logger slf4jLog = LoggerFactory.getLogger(GlobalParameters.class);
 
 	public void  initGlobalParameter(Context c) {
         context =c;
@@ -194,7 +196,11 @@ public class GlobalParameters extends CommonGlobalParms{
         internalRootDirectory= Environment.getExternalStorageDirectory().toString();
         internalAppSpecificDirectory=internalRootDirectory+"/Android/data/com.sentaroh.android.SMBExplorer/files";
 
-		loadSettingsParm(c);
+        final LogUtil jcifs_ng_lu = new LogUtil(c, "SLF4J", this);
+        JcifsNgLogWriter jcifs_ng_lw=new JcifsNgLogWriter(jcifs_ng_lu);
+        slf4jLog.setWriter(jcifs_ng_lw);
+
+        loadSettingsParm(c);
 
         safMgr =new SafManager(c, settingDebugLevel>0);
 
@@ -210,6 +216,16 @@ public class GlobalParameters extends CommonGlobalParms{
         settingLogOption=prefs.getBoolean(c.getString(R.string.settings_log_option), false);
         settingPutLogcatOption=prefs.getBoolean(c.getString(R.string.settings_put_logcat_option), false);
         setLogParms(this);
+
+        if (settingDebugLevel==0) {
+            slf4jLog.setLogOption(false, true, false, false, false);
+        } else if (settingDebugLevel==1) {
+            slf4jLog.setLogOption(false, true, true, false, false);
+        } else if (settingDebugLevel==2) {
+            slf4jLog.setLogOption(true, true, true, true, true);
+        } else if (settingDebugLevel==3) {
+            slf4jLog.setLogOption(true, true, true, true, true);
+        }
     }
 
     public void setSettingOptionLogEnabled(Context c, boolean enabled) {
@@ -229,6 +245,17 @@ public class GlobalParameters extends CommonGlobalParms{
         setLogFileName(gp.settingLogMsgFilename);
         setApplicationTag(APPLICATION_TAG);
 
+    }
+
+    class JcifsNgLogWriter extends LoggerWriter {
+        private LogUtil mLu =null;
+        public JcifsNgLogWriter(LogUtil lu) {
+            mLu =lu;
+        }
+        @Override
+        public void write(String msg) {
+            mLu.addDebugMsg(1,"I", msg);
+        }
     }
 
 }

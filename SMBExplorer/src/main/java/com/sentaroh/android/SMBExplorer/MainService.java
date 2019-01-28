@@ -327,12 +327,13 @@ public class MainService extends Service {
                 mGp.wifiIsActive = false;
                 notifyToWifiStatusChanged();
             } else {
+                notifyToWifiStatusChanged();
                 if (ss.equals("COMPLETED") || ss.equals("ASSOCIATING") || ss.equals("ASSOCIATED")) {
                     if (mGp.wifiSsid.equals("") && !wssid.equals("")) {
                         mUtil.addDebugMsg(1, "I", "WIFI receiver, Connected WIFI Access point ssid=" + wssid);
                         mGp.wifiSsid = wssid;
                         mGp.wifiIsActive = true;
-                        notifyToWifiStatusChanged();
+//                        notifyToWifiStatusChanged();
                     }
                 } else if (ss.equals("INACTIVE") ||
                         ss.equals("DISCONNECTED") ||
@@ -344,14 +345,14 @@ public class MainService extends Service {
                             mUtil.addDebugMsg(1, "I", "WIFI receiver, Disconnected WIFI Access point ssid=" + mGp.wifiSsid);
                             mGp.wifiSsid = "";
                             mGp.wifiIsActive = true;
-                            notifyToWifiStatusChanged();
+//                            notifyToWifiStatusChanged();
                         }
                     } else {
                         if (new_wifi_enabled) {
                             mUtil.addDebugMsg(1, "I", "WIFI receiver, WIFI On");
                             mGp.wifiSsid = "";
                             mGp.wifiIsActive = true;
-                            notifyToWifiStatusChanged();
+//                            notifyToWifiStatusChanged();
                         }
                     }
                 }

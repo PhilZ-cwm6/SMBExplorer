@@ -1,5 +1,6 @@
 package com.sentaroh.android.SMBExplorer;
 
+import android.content.ContentProviderClient;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -8,9 +9,13 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.storage.StorageManager;
 import android.preference.PreferenceManager;
+import android.provider.DocumentsContract;
 import android.support.v4.content.ContextCompat;
 
 import com.sentaroh.android.Utilities.LocalMountPoint;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
@@ -38,22 +43,31 @@ public class SafManager {
     private SafFile sdcardRootSafFile=null;
     private String sdcardRootUuid=null;
 
-    private String msg_area="";
+    private static Logger slf4jLog = LoggerFactory.getLogger(SafManager.class);
 
-    public String getMessages() {
-        String result=msg_area;
-        msg_area="";
-        return result;
+    private void putDebugMessage(String msg) {
+        slf4jLog.debug(msg);
     }
 
-    public void clearMessages() {
-        msg_area="";
+    private void putInfoMessage(String msg) {
+        slf4jLog.info(msg);
+    }
+
+    private String mLastErrorMessage="";
+    private void putErrorMessage(String msg) {
+        mLastErrorMessage=msg;
+        slf4jLog.error(msg);
+    }
+
+    public String getLastErrorMessage() {
+        String em=mLastErrorMessage;
+        mLastErrorMessage="";
+        return em;
     }
 
     public SafManager(Context c, boolean debug) {
         mContext=c;
         setDebugEnabled(debug);
-        clearMessages();
         loadSafFile();
     }
 
@@ -65,7 +79,7 @@ public class SafManager {
         boolean result=false;
         if (sdcardRootDirectory.equals(UNKNOWN_SDCARD_DIRECTORY)) result=false;
         else result=true;
-//        msg_area+="isSdcardMounted result="+result+"\n";
+//        msg_array+="isSdcardMounted result="+result+"\n";
         return result;
     }
 
@@ -76,11 +90,11 @@ public class SafManager {
             if (uri.toString().endsWith("%3A") || uri.toString().endsWith(":")) result=true;
         }
 //		Log.v("","uuid="+uuid+", uri="+uri.toString()+", result="+result);
-//        msg_area+="isRootTreeUri result="+result+", uuid="+uuid+"\n";
+//        msg_array+="isRootTreeUri result="+result+", uuid="+uuid+"\n";
         return result;
     }
 
-    private String getExternalSdcardPath() {
+    private String getExternalSdcardMountPoint() {
         File[] fl= ContextCompat.getExternalFilesDirs(mContext, null);
         String ld= LocalMountPoint.getExternalStorageDir();
         String esd=UNKNOWN_SDCARD_DIRECTORY;
@@ -98,8 +112,9 @@ public class SafManager {
             else if (isFilePathExists("/sdcard1", true)) esd="/sdcard1";
             else if (isFilePathExists("/mnt/extSdCard", true)) esd="/mnt/extSdCard";
             else if (isFilePathExists("/storage/extSdCard", true)) esd="/storage/extSdCard";
+            else if (isFilePathExists("/mnt/SD1", true)) esd="/mnt/SD1";
         }
-//        msg_area+="getExternalSdcardPath path="+esd+"\n";
+//        msg_array+="getExternalSdcardMountPoint path="+esd+"\n";
         return esd;
     }
 
@@ -123,7 +138,7 @@ public class SafManager {
             else if (isFilePathExists("/mnt/extSdCard", false)) esd="/mnt/extSdCard";
             else if (isFilePathExists("/storage/extSdCard", false)) esd="/storage/extSdCard";
         }
-//        msg_area+="hasExternalSdcardPath path="+esd+"\n";
+//        msg_array+="hasExternalSdcardPath path="+esd+"\n";
         return esd.equals("")?false:true;
     }
 
@@ -136,7 +151,6 @@ public class SafManager {
     }
 
     public void loadSafFile() {
-        clearMessages();
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
         String uuid_list=prefs.getString(SDCARD_UUID_KEY, "");
         sdcardRootDirectory=UNKNOWN_SDCARD_DIRECTORY;
@@ -154,14 +168,14 @@ public class SafManager {
                         if (Build.VERSION.SDK_INT>=23) {//for Huawei mediapad
                             esd="/storage/"+uuid;
                         } else {
-                            esd=getExternalSdcardPath();
+                            esd= getExternalSdcardMountPoint();
                         }
                         if (esd!=null && !esd.equals("")) {
                             File mp=new File(esd);
                             if (mp.exists()) {
                                 sdcardRootSafFile=sf;
                                 sdcardRootDirectory=esd;
-//                            msg_area+="locadSafFile SDCARD uuid found, uuid="+uuid+"\n";
+//                            msg_array+="locadSafFile SDCARD uuid found, uuid="+uuid+"\n";
                                 break;
                             }
                         }
@@ -179,10 +193,16 @@ public class SafManager {
                 if (isUsbUuid(uuid)) {
                     SafFile sf= SafFile.fromTreeUri(mContext, Uri.parse("content://com.android.externalstorage.documents/tree/"+uuid+"%3A"));
                     if (sf!=null && sf.getName()!=null) {
-                        usbRootDirectory="/usb/"+uuid;
-                        usbRootSafFile=sf;
-                        usbRootUuid=uuid;
-//                    msg_area+="locadSafFile USB uuid found, uuid="+uuid+"\n";
+                        File ufp=new File("/storage/"+uuid);
+                        if (ufp.exists()) {
+                            usbRootDirectory="/storage/"+uuid;
+                            usbRootSafFile=sf;
+                            usbRootUuid=uuid;
+                            putInfoMessage("loadSafFile USB uuid found, uuid="+uuid);
+                        } else {
+                            putErrorMessage("loadSafFile USB uuid found but mount point does not exists, uuid="+uuid);
+                        }
+
                         break;
                     }
                 }
@@ -206,6 +226,21 @@ public class SafManager {
         return usbRootDirectory;
     }
 
+    public boolean isSdcardFilePath(String file_path) {
+        if (file_path.startsWith(getSdcardRootPath())) return true;
+        else {
+            if (file_path.equals(getSdcardRootPath())) return  true;
+        }
+        return false;
+    }
+
+    public boolean isUsbFilePath(String file_path) {
+        if (file_path.startsWith(getUsbRootPath())) return true;
+        else {
+            if (file_path.equals(getUsbRootPath())) return  true;
+        }
+        return false;
+    }
 
     public void saveSdcardUuidList(String uuid) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
@@ -223,10 +258,10 @@ public class SafManager {
                 sep=",";
             }
             prefs.edit().putString(SDCARD_UUID_KEY, sd).commit();
-//            msg_area+="saveSdcardUuidList successfull, uuids="+sd+"\n";
+//            msg_array+="saveSdcardUuidList successfull, uuids="+sd+"\n";
         } else {
             prefs.edit().putString(SDCARD_UUID_KEY, uuid).commit();
-//            msg_area+="saveSdcardUuidList successfull, uuids="+uuid+"\n";
+//            msg_array+="saveSdcardUuidList successfull, uuids="+uuid+"\n";
         }
     }
 
@@ -246,10 +281,10 @@ public class SafManager {
                 sep=",";
             }
             prefs.edit().putString(USB_UUID_KEY, sd).commit();
-//            msg_area+="saveUsbUuidList successfull, uuids="+sd+"\n";
+//            msg_array+="saveUsbUuidList successfull, uuids="+sd+"\n";
         } else {
             prefs.edit().putString(USB_UUID_KEY, uuid).commit();
-//            msg_area+="saveUsbUuidList successfull, uuids="+uuid+"\n";
+//            msg_array+="saveUsbUuidList successfull, uuids="+uuid+"\n";
         }
     }
 
@@ -297,7 +332,7 @@ public class SafManager {
             if (sdcard_uuids.size()>0) {
                 if (sdcard_uuids.contains(uuid)) result=false;
             }
-            msg_area+="isUsbUuid uuid="+uuid+", result="+result+"\n";
+            putInfoMessage("isUsbUuid uuid="+uuid+", result="+result);
             return result;
         } else {
             if (hasExternalSdcardPath()) result=false;
@@ -324,10 +359,10 @@ public class SafManager {
                 String uuid=(String) getUuid.invoke(volume);
                 String label=(String) getLabel.invoke(volume);
 //                String path = (String) getPath.invoke(volume);
-                msg_area+="getSdcardUuidFromStorageManager uuid found="+uuid+", Label="+label+"\n";
+                putInfoMessage("getSdcardUuidFromStorageManager uuid found="+uuid+", Label="+label);
                 if (uuid!=null && (!primary && !label.toLowerCase().contains("usb"))) {
                     uuids.add(uuid);
-                    msg_area+="getSdcardUuidFromStorageManager added="+uuid+"\n";
+                    putInfoMessage("getSdcardUuidFromStorageManager added="+uuid);
                 }
             }
         } catch (ClassCastException e) {
@@ -359,11 +394,11 @@ public class SafManager {
                 String uuid=(String) getUuid.invoke(volume);
                 String label=(String) getLabel.invoke(volume);
 //                String path = (String) getPath.invoke(volume);
-                msg_area+="getSdcardUuidFromStorageManager uuid found="+uuid+", Label="+label+"\n";
+                putInfoMessage("getSdcardUuidFromStorageManager uuid found="+uuid+", Label="+label);
                 if (uuid!=null && (label.contains("SD") || label.toLowerCase().contains("sdcard1") || label.equals("forZenPad") ||
                         label.contains("Speicherkarte") )) {
                     uuids.add(uuid);
-                    msg_area+="getSdcardUuidFromStorageManager added="+uuid+"\n";
+                    putInfoMessage("getSdcardUuidFromStorageManager added="+uuid);
                 }
             }
         } catch (ClassCastException e) {
@@ -395,10 +430,10 @@ public class SafManager {
                 String uuid=(String) getUuid.invoke(volume);
                 String label=(String) getLabel.invoke(volume);
 //                String path = (String) getPath.invoke(volume);
-                msg_area+="getUsbUuidFromStorageManager uuid found="+uuid+", Label="+label+"\n";
+                putInfoMessage("getUsbUuidFromStorageManager uuid found="+uuid+", Label="+label);
                 if (uuid!=null && ( label.toLowerCase().contains("usb") )) {
                     uuids.add(uuid);
-                    msg_area+="getUsbUuidFromStorageManager added="+uuid+"\n";
+                    putInfoMessage("getUsbUuidFromStorageManager added="+uuid);
                 }
             }
         } catch (ClassCastException e) {
@@ -415,19 +450,19 @@ public class SafManager {
 
     public boolean addSdcardUuid(final String uuid) {
         boolean result=true;
-        msg_area="addSdcardUuid uuif="+uuid+"\n";
+        putInfoMessage("addSdcardUuid uuif="+uuid);
         List<UriPermission> permissions = mContext.getContentResolver().getPersistedUriPermissions();
-        for(UriPermission item:permissions) msg_area+=item.toString()+"\n";
+        for(UriPermission item:permissions) putInfoMessage(item.toString());
         if (isUsbUuid(uuid)) return result;
         try {
             mContext.getContentResolver().takePersistableUriPermission(
                     Uri.parse("content://com.android.externalstorage.documents/tree/"+uuid+"%3A"),
                     Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             saveSdcardUuidList(uuid);
-            msg_area+="addSdcardUuid successfull"+"\n";
+            putInfoMessage("addSdcardUuid successfull");
             loadSafFile();
         } catch(Exception e) {
-            msg_area+="addSdcardUuid error, uuid="+uuid+", Error="+e.getMessage()+"\n";
+            putErrorMessage("addSdcardUuid error, uuid="+uuid+", Error="+e.getMessage());
             result=false;
         }
         return result;
@@ -437,29 +472,34 @@ public class SafManager {
         boolean result=false;
         if (getUsbRootSafFile()==null) result=false;
         else result=true;
-//        msg_area+="isUsbMounted result="+result+"\n";
+//        msg_array+="isUsbMounted result="+result);
         return result;
     }
 
-    public void addUsbUuid(Uri uri) {
+    public boolean addUsbUuid(Uri uri) {
+        boolean result=true;
         String uuid=getUuidFromUri(uri.toString());
-        if (uuid.length()>0) addUsbUuid(uuid);
+        if (uuid.length()>0) result=addUsbUuid(uuid);
+        return result;
     }
 
-    public void addUsbUuid(final String uuid) {
-        msg_area="addUsbUuid uuif="+uuid+"\n";
+    public boolean addUsbUuid(final String uuid) {
+        boolean result=true;
+        putInfoMessage("addUsbUuid uuif="+uuid);
         List<UriPermission> permissions = mContext.getContentResolver().getPersistedUriPermissions();
-        for(UriPermission item:permissions) msg_area+=item.toString()+"\n";
+        for(UriPermission item:permissions) putInfoMessage(item.toString());
         try {
             mContext.getContentResolver().takePersistableUriPermission(
                     Uri.parse("content://com.android.externalstorage.documents/tree/"+uuid+"%3A"),
                     Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             saveUsbUuidList(uuid);
-            msg_area+="addUsbUuid successfull"+"\n";
+            putInfoMessage("addUsbUuid successfull");
             loadSafFile();
         } catch(Exception e) {
-            msg_area="addUsbUuid error, uuid="+uuid+", Error="+e.getMessage()+"\n";
+            putErrorMessage("addUsbUuid error, uuid="+uuid+", Error="+e.getMessage());
+            result=false;
         }
+        return result;
     }
 
     public SafFile createUsbItem(String target_path, boolean isDirectory) {
@@ -484,10 +524,14 @@ public class SafManager {
 
     private SafFile createItem(SafFile rf, String target_path, boolean isDirectory) {
         SafFile parent=null;
-        clearMessages();
-        msg_area+="createItem target_path="+target_path+", root name="+rf.getName()+", isDirectory="+isDirectory+"\n";
-        List<UriPermission> permissions = mContext.getContentResolver().getPersistedUriPermissions();
-        for(UriPermission item:permissions) msg_area+=item.toString()+"\n";
+//        clearMessages();
+        if (slf4jLog.isDebugEnabled()) putDebugMessage("createItem target_path="+target_path+", isDirectory="+isDirectory);
+//        List<UriPermission> permissions = mContext.getContentResolver().getPersistedUriPermissions();
+//        for(UriPermission item:permissions) putDebugMessage(item.toString());
+
+        if (rf==null) {
+            return null;
+        }
 
         long b_time=System.currentTimeMillis();
         SafFile document=rf;
@@ -501,37 +545,48 @@ public class SafManager {
                 relativePath=target_path.replace(usbRootDirectory+"/", "");
         }
 
-        msg_area+="rootUri="+rf.getUri()+", relativePath="+relativePath+"\n";
+        if (slf4jLog.isDebugEnabled()) putDebugMessage("rootUri="+rf.getUri()+", relativePath="+relativePath);
 
-        if (!relativePath.equals("")) {
-            String[] parts = relativePath.split("\\/");
-            for (int i = 0; i < parts.length; i++) {
-                msg_area+="parts="+parts[i]+"\n";
-                if (!parts[i].equals("")) {
-                    SafFile nextDocument = document.findFile(parts[i]);
-                    msg_area+="findFile="+parts[i]+", result="+nextDocument+"\n";
-                    if (nextDocument == null) {
-                        if ((i < parts.length - 1) || isDirectory) {
-                            String c_dir=parts[i];
-                            nextDocument = document.createDirectory(c_dir);
-                            msg_area+="Directory was created name="+c_dir+", result="+nextDocument+"\n";
-                            msg_area+=document.getMessages();
+        ContentProviderClient client =null;
+        try {
+            client = mContext.getContentResolver().acquireContentProviderClient(rf.getUri().getAuthority());
+            if (!relativePath.equals("")) {
+                String[] parts = relativePath.split("\\/");
+                for (int i = 0; i < parts.length; i++) {
+                    if (slf4jLog.isDebugEnabled()) putDebugMessage("parts="+parts[i]);
+                    if (!parts[i].equals("")) {
+                        SafFile nextDocument = document.findFile(client, parts[i]);
+                        if (slf4jLog.isDebugEnabled()) putDebugMessage("findFile="+parts[i]+", result="+nextDocument);
+                        if (nextDocument == null) {
+                            if ((i < parts.length - 1) || isDirectory) {
+                                String c_dir=parts[i];
+                                nextDocument = document.createDirectory(c_dir);
+                                if (slf4jLog.isDebugEnabled()) putDebugMessage("Directory was created name="+c_dir+", result="+nextDocument);
 //                			Log.v("","saf="+document.getMsgArea());
-                        } else {
-                            nextDocument = document.createFile("", parts[i]);
-                            msg_area+="File was created name="+parts[i]+", result="+nextDocument+"\n";
-                            msg_area+=document.getMessages();
+                            } else {
+                                nextDocument = document.createFile("", parts[i]);
+                                if (slf4jLog.isDebugEnabled()) putDebugMessage("File was created name="+parts[i]+", result="+nextDocument);
+                            }
                         }
-                    }
-                    parent=document;
-                    document = nextDocument;
-                    if (document!=null) {
-                        document.setParentFile(parent);
+                        parent=document;
+                        document = nextDocument;
+                        if (document!=null) {
+                            document.setParentFile(parent);
+                        }
                     }
                 }
             }
+        } catch(Exception e) {
+            StackTraceElement[] st=e.getStackTrace();
+            String stm="";
+            for (int i=0;i<st.length;i++) {
+                stm+="\n at "+st[i].getClassName()+"."+ st[i].getMethodName()+"("+st[i].getFileName()+ ":"+st[i].getLineNumber()+")";
+            }
+            putErrorMessage("createItem Error="+e.getMessage()+stm);
+        } finally {
+            client.release();
         }
-        msg_area+="createItem elapsed="+(System.currentTimeMillis()-b_time)+"\n";
+        if (slf4jLog.isDebugEnabled()) putDebugMessage("createItem elapsed="+(System.currentTimeMillis()-b_time));
         return document;
     }
 
@@ -545,10 +600,9 @@ public class SafManager {
 
     private SafFile findItem(SafFile rf, String target_path) {
         SafFile parent=null;
-        clearMessages();
-        msg_area+="findItem target_path="+target_path+", root name="+rf.getName()+"\n";
-        List<UriPermission> permissions = mContext.getContentResolver().getPersistedUriPermissions();
-        for(UriPermission item:permissions) msg_area+=item.toString()+"\n";
+        if (slf4jLog.isDebugEnabled()) putDebugMessage("findItem target_path="+target_path+", root name="+rf.getName());
+//        List<UriPermission> permissions = mContext.getContentResolver().getPersistedUriPermissions();
+//        for(UriPermission item:permissions) putDebugMessage(item.toString());
 
         long b_time=System.currentTimeMillis();
         SafFile document=rf;
@@ -562,29 +616,43 @@ public class SafManager {
                 relativePath=target_path.replace(usbRootDirectory+"/", "");
         }
 
-        msg_area+="rootUri="+rf.getUri()+", relativePath="+relativePath+"\n";
+        if (slf4jLog.isDebugEnabled()) putDebugMessage("rootUri="+rf.getUri()+", relativePath="+relativePath);
 
-        if (!relativePath.equals("")) {
-            String[] parts = relativePath.split("\\/");
-            for (int i = 0; i < parts.length; i++) {
-                msg_area+="parts="+parts[i]+"\n";
-                if (!parts[i].equals("")) {
-                    SafFile nextDocument = document.findFile(parts[i]);
-                    msg_area+="findFile="+parts[i]+", result="+nextDocument+"\n";
-                    if (nextDocument != null) {
-                        parent=document;
-                        document = nextDocument;
-                        if (document!=null) {
-                            document.setParentFile(parent);
+        ContentProviderClient client =null;
+        try {
+            client = mContext.getContentResolver().acquireContentProviderClient(rf.getUri().getAuthority());
+            if (!relativePath.equals("")) {
+                String[] parts = relativePath.split("\\/");
+                for (int i = 0; i < parts.length; i++) {
+                    if (slf4jLog.isDebugEnabled()) putDebugMessage("parts="+parts[i]);
+                    if (!parts[i].equals("")) {
+                        SafFile nextDocument = document.findFile(client, parts[i]);
+                        if (slf4jLog.isDebugEnabled()) putDebugMessage("findFile="+parts[i]+", result="+nextDocument);
+                        if (nextDocument != null) {
+                            parent=document;
+                            document = nextDocument;
+                            if (document!=null) {
+                                document.setParentFile(parent);
+                            }
+                        } else {
+                            document = null;
+                            break;
                         }
-                    } else {
-                        document = null;
-                        break;
                     }
                 }
             }
+        } catch(Exception e) {
+            StackTraceElement[] st=e.getStackTrace();
+            String stm="";
+            for (int i=0;i<st.length;i++) {
+                stm+="\n at "+st[i].getClassName()+"."+ st[i].getMethodName()+"("+st[i].getFileName()+ ":"+st[i].getLineNumber()+")";
+            }
+            putErrorMessage("findItem Error="+e.getMessage()+stm);
+        } finally {
+            client.release();
         }
-        msg_area+="findItem elapsed="+(System.currentTimeMillis()-b_time)+"\n";
+
+        if (slf4jLog.isDebugEnabled()) putDebugMessage("findItem elapsed="+(System.currentTimeMillis()-b_time));
         return document;
     };
 

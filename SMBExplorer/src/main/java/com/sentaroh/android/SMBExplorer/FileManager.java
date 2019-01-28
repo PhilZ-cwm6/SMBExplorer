@@ -733,12 +733,10 @@ public class FileManager {
     }
 
     static public void setRemoteTabEnabled(GlobalParameters mGp) {
-        if (mGp.wifiSsid.equals("")) {
-            mGp.remoteFileListDirSpinner.setEnabled(false);
-            mGp.remoteFileListView.setEnabled(false);
-            mGp.remoteFileListTopBtn.setEnabled(false);
-            mGp.remoteFileListUpBtn.setEnabled(false);
-        } else {
+        String ia=CommonUtilities.getIfIpAddress("wlan0");
+        String et=CommonUtilities.getIfIpAddress("eth0");
+        if (ia.equals("")) ia=et;
+        if (ia.startsWith("192.168.") || ia.startsWith("10.") || ia.startsWith("172.16") ) {
             mGp.remoteFileListDirSpinner.setEnabled(true);
             mGp.remoteFileListView.setEnabled(true);
             if (mGp.remoteDir.equals("")) {
@@ -748,6 +746,11 @@ public class FileManager {
                 mGp.remoteFileListTopBtn.setEnabled(true);
                 mGp.remoteFileListUpBtn.setEnabled(true);
             }
+        } else {
+            mGp.remoteFileListDirSpinner.setEnabled(false);
+            mGp.remoteFileListView.setEnabled(false);
+            mGp.remoteFileListTopBtn.setEnabled(false);
+            mGp.remoteFileListUpBtn.setEnabled(false);
         }
     }
 
