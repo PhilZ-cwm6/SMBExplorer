@@ -5,7 +5,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Handler;
 
+import com.sentaroh.android.Utilities.Base64Compat;
 import com.sentaroh.android.Utilities.Dialog.CommonDialog;
+import com.sentaroh.android.Utilities.EncryptUtil;
 import com.sentaroh.android.Utilities.NotifyEvent;
 import com.sentaroh.android.Utilities.ThreadCtrl;
 import com.sentaroh.android.Utilities.Widget.CustomSpinnerAdapter;
@@ -26,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_KEY_STORE_ALIAS;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_PROFILE_NAME;
 
 public class SmbServerUtil {
@@ -46,6 +49,8 @@ public class SmbServerUtil {
         ArrayList<SmbServerConfig> rem = new ArrayList<SmbServerConfig>();
         boolean error=false;
         try {
+            String priv_key=null;
+            EncryptUtil.CipherParms cp_int=null;
             if (sdcard) {
                 File sf = new File(fp);
                 if (sf.exists()) {
@@ -56,14 +61,22 @@ public class SmbServerUtil {
                     error=true;
                 }
             } else {
+                priv_key=KeyStoreUtil.getGeneratedPasswordNewVersion(gp.context, SMBEXPLORER_KEY_STORE_ALIAS);
+                cp_int= EncryptUtil.initDecryptEnv(priv_key);
+
                 InputStream in = gp.context.openFileInput(SMBEXPLORER_PROFILE_NAME);
                 br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
             }
             if (!error) {
-                String pl;
+                String pl="", dec_pl="";
                 String[] alp;
                 while ((pl = br.readLine()) != null) {
-                    alp = parseSmbServerConfigString(pl);
+                    if (sdcard) dec_pl=pl;
+                    else {
+                        byte[] dec_array = Base64Compat.decode(pl, Base64Compat.NO_WRAP);
+                        dec_pl = EncryptUtil.decrypt(dec_array, cp_int);
+                    }
+                    alp = parseSmbServerConfigString(dec_pl);
 //                    public SmbServerConfig(String pfn,
 //                            String domain, String pf_user, String pf_pass, String pf_addr, String pf_port, String pf_share){
                     SmbServerConfig sc=new SmbServerConfig(alp[1], "", alp[3], alp[4], alp[5], alp[6], alp[7]);
@@ -82,6 +95,8 @@ public class SmbServerUtil {
             gp.mUtil.addDebugMsg(0,"E",e.toString());
             gp.commonDlg.showCommonDialog(false,"E", gp.context.getString(R.string.msgs_exception),e.toString(),null);
             error=true;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         if (error) {
             rem.add(new SmbServerConfig("HOME-D","", "Android", "", "192.168.200.128", "","D"));
@@ -102,12 +117,18 @@ public class SmbServerUtil {
         PrintWriter pw;
         BufferedWriter bw = null;
         try {
+            String priv_key=null;
+            EncryptUtil.CipherParms cp_int=null;
+
             if (sdcard) {
                 File lf = new File(fd);
                 if (!lf.exists()) lf.mkdir();
                 bw = new BufferedWriter(new FileWriter(fd+"/"+fn));
                 pw = new PrintWriter(bw);
             } else {
+                priv_key=KeyStoreUtil.getGeneratedPasswordNewVersion(gp.context, SMBEXPLORER_KEY_STORE_ALIAS);
+                cp_int= EncryptUtil.initDecryptEnv(priv_key);
+
                 OutputStream out = gp.context.openFileOutput(SMBEXPLORER_PROFILE_NAME, MODE_PRIVATE);
                 pw = new PrintWriter(new OutputStreamWriter(out, "UTF-8"));
             }
@@ -116,18 +137,34 @@ public class SmbServerUtil {
                 for (int i = 0; i <= (gp.smbConfigList.size() - 1); i++) {
                     SmbServerConfig item = gp.smbConfigList.get(i);
                     if (item.getType().equals("R")) {
-                        String pl = item.getType() + "\t" //0
-                                + item.getName() + "\t"//1
-                                + item.getActive() + "\t"//2
-                                + item.getUser() + "\t"//3
-                                + item.getPass() + "\t"//4
-                                + item.getAddr() + "\t"//5
-                                + item.getPort() + "\t"//6
-                                + item.getShare()+ "\t"//7
-                                + item.getDomain()+ "\t"//8
-                                + item.getSmbLevel()+ "\t"//9
-                                ;
-                        pw.println(pl);
+                        if (sdcard) {
+                            String pl = item.getType() + "\t" //0
+                                    + item.getName() + "\t"//1
+                                    + item.getActive() + "\t"//2
+                                    + item.getUser() + "\t" //3
+                                    + "" + "\t"             //4 Do not save password
+                                    + item.getAddr() + "\t" //5
+                                    + item.getPort() + "\t"//6
+                                    + item.getShare()+ "\t"//7
+                                    + item.getDomain()+ "\t"//8
+                                    + item.getSmbLevel()+ "\t"//9
+                                    ;
+                            pw.println(pl);
+                        } else {
+                            String pl = item.getType() + "\t" //0
+                                    + item.getName() + "\t"//1
+                                    + item.getActive() + "\t"//2
+                                    + item.getUser() + "\t"//3
+                                    + item.getPass() + "\t"//4
+                                    + item.getAddr() + "\t"//5
+                                    + item.getPort() + "\t"//6
+                                    + item.getShare()+ "\t"//7
+                                    + item.getDomain()+ "\t"//8
+                                    + item.getSmbLevel()+ "\t"//9
+                                    ;
+                            String enc =Base64Compat.encodeToString(EncryptUtil.encrypt(pl, cp_int), Base64Compat.NO_WRAP);
+                            pw.println(enc);
+                        }
                     }
                 }
             }
@@ -136,6 +173,8 @@ public class SmbServerUtil {
         } catch (IOException e) {
             gp.mUtil.addDebugMsg(0,"E",e.toString());
             gp.commonDlg.showCommonDialog(false,"E",gp.context.getString(R.string.msgs_exception),e.toString(),null);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

@@ -40,6 +40,7 @@ import android.webkit.MimeTypeMap;
 
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
 import com.sentaroh.android.Utilities.NotifyEvent;
+import com.sentaroh.android.Utilities.SafFile;
 import com.sentaroh.android.Utilities.ThreadCtrl;
 import com.sentaroh.jcifs.JcifsAuth;
 import com.sentaroh.jcifs.JcifsException;
@@ -472,8 +473,8 @@ public class FileIo extends Thread {
             SafFile[] children = lf.listFiles();//ディレクトリにあるすべてのファイルを処理する
             for (int i=0; i<children.length; i++) {  
             	if (!fileioThreadCtrl.isEnabled()) return false;
-            	boolean success = deleteSafFile(children[i], prefix);
-                if (!success) {  
+            	result=deleteSafFile(children[i], prefix);
+                if (!result) {
                     return false;  
                 }  
             }
@@ -482,9 +483,9 @@ public class FileIo extends Thread {
         result=lf.delete();
 	    if (result) {
     	    sendMsgToProgDlg(lf.getName()+" was deleted");
-    	    sendLogMsg("I","File was Deleted. File="+prefix+"/"+lf.getPath());
+    	    sendLogMsg("I","File was Deleted. File="+prefix+lf.getPath());
 	    } else {
-    	    sendLogMsg("I","Delete was failed, File="+prefix+"/"+lf.getPath());
+    	    sendLogMsg("I","Delete was failed, File="+prefix+lf.getPath());
     	    fileioThreadCtrl.setThreadMessage("Delete was failed, File="+prefix+"/"+lf.getPath());
 	    }
 	    return result;

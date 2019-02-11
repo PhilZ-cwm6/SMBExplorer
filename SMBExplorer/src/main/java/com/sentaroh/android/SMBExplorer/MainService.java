@@ -179,6 +179,7 @@ public class MainService extends Service {
                 throws RemoteException {
             mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
             mGp.callbackStub=null;
+            stopSelf();
         }
 
         @Override

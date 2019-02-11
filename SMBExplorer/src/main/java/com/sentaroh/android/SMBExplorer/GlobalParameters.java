@@ -41,6 +41,7 @@ import android.widget.TextView;
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
 import com.sentaroh.android.Utilities.CommonGlobalParms;
 import com.sentaroh.android.Utilities.Dialog.CommonDialog;
+import com.sentaroh.android.Utilities.SafManager;
 import com.sentaroh.android.Utilities.ThemeColorList;
 import com.sentaroh.android.Utilities.Widget.CustomTextView;
 

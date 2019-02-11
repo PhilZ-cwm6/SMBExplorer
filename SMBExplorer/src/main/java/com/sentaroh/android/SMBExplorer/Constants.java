@@ -56,4 +56,6 @@ public class Constants {
     final public static int SMBEXPLORER_TAB_POS_LOCAL=0;
 	final public static String SMBEXPLORER_TAB_REMOTE="Remote";
 	final public static int SMBEXPLORER_TAB_POS_REMOTE=1;
+
+    public static final String SMBEXPLORER_KEY_STORE_ALIAS = "SMBExplorer";
 }
