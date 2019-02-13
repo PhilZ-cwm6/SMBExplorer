@@ -35,7 +35,6 @@ import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.RemoteException;
 import android.os.SystemClock;
-import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
@@ -1069,7 +1068,11 @@ public class FileIo extends Thread {
                 result= copyFileLocalToSdcard_API21(iLf, fromUrl, toUrl, title_header);
             }
         } else if (toUrl.startsWith(mGp.safMgr.getUsbRootPath())) {
-            result=copyFileLocalToUsb(iLf, fromUrl, toUrl, title_header);
+            if (Build.VERSION.SDK_INT>=24) {
+                result=copyFileLocalToUsb_API24(iLf, fromUrl, toUrl, title_header);
+            } else {
+                result= copyFileLocalToUsb_API21(iLf, fromUrl, toUrl, title_header);
+            }
         } else {
             result= copyFileLocalToInternal(iLf, fromUrl, toUrl, title_header);
         }
@@ -1213,7 +1216,7 @@ public class FileIo extends Thread {
         return true;
     }
 
-    private boolean copyFileLocalToUsb(File iLf, String fromUrl, String toUrl, String title_header) throws IOException, JcifsException {
+    private boolean copyFileLocalToUsb_API21(File iLf, String fromUrl, String toUrl, String title_header) throws IOException, JcifsException {
         long b_time=System.currentTimeMillis();
         boolean result=false;
         SafFile oLf = mGp.safMgr.createUsbItem(toUrl, false);
@@ -1229,6 +1232,33 @@ public class FileIo extends Thread {
                 (System.currentTimeMillis()-b_time)+" mili seconds at " + calTransferRate(ifa.fileBytes,(System.currentTimeMillis()-b_time)));
 
         return copy_success;
+    }
+
+    private boolean copyFileLocalToUsb_API24(File iLf, String fromUrl, String toUrl, String title_header) throws IOException, JcifsException {
+        long b_time=System.currentTimeMillis();
+        boolean result=false;
+        File tmp_file=new File(mGp.safMgr.getUsbRootPath()+"/"+APP_SPECIFIC_DIRECTORY+"/files/"+System.currentTimeMillis());
+        SafFile temp_saf = mGp.safMgr.createUsbItem(tmp_file.getPath(), false);
+        OutputStream bos = new FileOutputStream(tmp_file);
+//        BufferedOutputStream bos=new BufferedOutputStream(os, 1024*1024*8);
+        FileAttributes ifa= getInputFileAttribute(fromUrl);
+
+        result=copyFile(ifa.is, bos, tmp_file, ifa.fileBytes, title_header, ifa.fileName, fromUrl, toUrl);
+        if (result) {
+            boolean slm=tmp_file.setLastModified(ifa.lastMod);
+            SafFile dest_saf = mGp.safMgr.createUsbItem(toUrl, false);
+            result=temp_saf.moveTo(dest_saf);
+            if (result) {
+                scanMediaStoreLibraryFile(toUrl);
+            } else {
+                temp_saf.delete();
+                sendLogMsg("I","Copy was failed, be cause can not renamed. Rename from="+fromUrl+" to="+toUrl);
+                fileioThreadCtrl.setThreadMessage("Copy was failed, be cause can not renamed. Rename from="+fromUrl+" to="+toUrl);
+            }
+        }
+        sendLogMsg("I",fromUrl+" was copied to "+toUrl+", "+ifa.fileBytes + " bytes transfered in " +
+                (System.currentTimeMillis()-b_time)+" mili seconds at " + calTransferRate(ifa.fileBytes,(System.currentTimeMillis()-b_time)));
+        return result;
     }
 
     private boolean copyFileLocalToSdcard_API21(File iLf, String fromUrl, String toUrl, String title_header) throws IOException, JcifsException {
