@@ -138,29 +138,29 @@ public class SmbServerUtil {
                     SmbServerConfig item = gp.smbConfigList.get(i);
                     if (item.getType().equals("R")) {
                         if (sdcard) {
-                            String pl = item.getType() + "\t" //0
-                                    + item.getName() + "\t"//1
-                                    + item.getActive() + "\t"//2
-                                    + item.getUser() + "\t" //3
-                                    + "" + "\t"             //4 Do not save password
-                                    + item.getAddr() + "\t" //5
-                                    + item.getPort() + "\t"//6
-                                    + item.getShare()+ "\t"//7
-                                    + item.getDomain()+ "\t"//8
-                                    + item.getSmbLevel()+ "\t"//9
+                            String pl = item.getType() + "\t"   //0
+                                    + item.getName() + "\t"     //1
+                                    + "" + "\t"                 //2
+                                    + item.getUser() + "\t"     //3
+                                    + "" + "\t"                 //4 Do not save password
+                                    + item.getAddr() + "\t"     //5
+                                    + item.getPort() + "\t"     //6
+                                    + item.getShare()+ "\t"     //7
+                                    + item.getDomain()+ "\t"    //8
+                                    + item.getSmbLevel()+ "\t"  //9
                                     ;
                             pw.println(pl);
                         } else {
-                            String pl = item.getType() + "\t" //0
-                                    + item.getName() + "\t"//1
-                                    + item.getActive() + "\t"//2
-                                    + item.getUser() + "\t"//3
-                                    + item.getPass() + "\t"//4
-                                    + item.getAddr() + "\t"//5
-                                    + item.getPort() + "\t"//6
-                                    + item.getShare()+ "\t"//7
-                                    + item.getDomain()+ "\t"//8
-                                    + item.getSmbLevel()+ "\t"//9
+                            String pl = item.getType() + "\t"   //0
+                                    + item.getName() + "\t"     //1
+                                    + "" + "\t"                 //2
+                                    + item.getUser() + "\t"     //3
+                                    + item.getPass() + "\t"     //4
+                                    + item.getAddr() + "\t"     //5
+                                    + item.getPort() + "\t"     //6
+                                    + item.getShare()+ "\t"     //7
+                                    + item.getDomain()+ "\t"    //8
+                                    + item.getSmbLevel()+ "\t"  //9
                                     ;
                             String enc =Base64Compat.encodeToString(EncryptUtil.encrypt(pl, cp_int), Base64Compat.NO_WRAP);
                             pw.println(enc);

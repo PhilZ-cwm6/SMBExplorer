@@ -23,7 +23,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +56,7 @@ public class RetrieveFileList extends Thread  {
 	
 	private GlobalParameters mGp=null;
 
-	private boolean mSmb1=false;
+	private int mSmbLevel =JcifsAuth.JCIFS_FILE_SMB211;
 	public RetrieveFileList(GlobalParameters gp, ThreadCtrl ac, String smb_level, String ru, List<String> d_list,
 			String user, String pass, NotifyEvent ne) {
 //		currContext=c;
@@ -75,7 +74,7 @@ public class RetrieveFileList extends Thread  {
 
 		if (!user.equals("")) tuser=user;
 		if (!pass.equals("")) tpass=pass;
-        mSmb1=smb_level.equals("1")?true:false;
+        mSmbLevel =Integer.parseInt(smb_level);
 	}
 
 	public final static String OPCD_FILE_LIST="FL";
@@ -100,7 +99,7 @@ public class RetrieveFileList extends Thread  {
 		
 		if (!user.equals("")) tuser=user;
 		if (!pass.equals("")) tpass=pass;
-        mSmb1=smb_level.equals("1")?true:false;
+        mSmbLevel =Integer.parseInt(smb_level);
 	}
 	
 	
@@ -113,7 +112,7 @@ public class RetrieveFileList extends Thread  {
 		defaultUEH = Thread.currentThread().getUncaughtExceptionHandler();
         Thread.currentThread().setUncaughtExceptionHandler(unCaughtExceptionHandler);
 
-        ntlmPaswordAuth = new JcifsAuth(mSmb1, "", tuser, tpass);
+        ntlmPaswordAuth = new JcifsAuth(mSmbLevel, "", tuser, tpass);
 
 //        Log.v("","url="+remoteUrl);
 		String host_t1=remoteUrl.replace("smb://","").replaceAll("//", "/");
@@ -128,7 +127,7 @@ public class RetrieveFileList extends Thread  {
 				err_msg="Can not be connected to specified IP address, IP address="+host_t3;
 			}
 		} else {
-			if (JcifsUtil.getSmbHostNameByAddress(false, host_t3)==null) {
+			if (JcifsUtil.getSmbHostNameByAddress(mSmbLevel, host_t3)==null) {
 				error=true;
 				err_msg="Specified hostname is not found, Name="+host_t3;
 			}

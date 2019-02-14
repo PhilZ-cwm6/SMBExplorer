@@ -285,10 +285,12 @@ public class SmbServerEditor {
 
 //        adapter.add(mContext.getString(R.string.msgs_profile_edit_sync_folder_dlg_smb_protocol_system));
         adapter.add("SMB1");
-        adapter.add("SMB2");
+        adapter.add("SMB201");
+        adapter.add("SMB211");
 
         if (cv.equals("1")) spinner.setSelection(0);
         else if (cv.equals("2")) spinner.setSelection(1);
+        else if (cv.equals("3")) spinner.setSelection(2);
         else spinner.setSelection(0);
     }
 

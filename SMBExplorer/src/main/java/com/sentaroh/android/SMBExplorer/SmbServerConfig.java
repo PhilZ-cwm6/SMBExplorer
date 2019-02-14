@@ -1,5 +1,7 @@
 package com.sentaroh.android.SMBExplorer;
 
+import com.sentaroh.jcifs.JcifsAuth;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -10,14 +12,13 @@ import java.io.Serializable;
 class SmbServerConfig implements Serializable, Cloneable, Comparable<SmbServerConfig>{
 	private String profileType="R";
 	private String profileName="No name";
-	private String profileActive="A";
     private String profileDomain="";
 	private String profileUser="";
 	private String profilePass="";
 	private String profileAddr="";
 	private String profilePort="";
 	private String profileShare="";
-    private String profileSmbLevel="2";
+    private String profileSmbLevel=String.valueOf(JcifsAuth.JCIFS_FILE_SMB211);
 	private boolean profileIsChecked=false;
 
     @Override
@@ -55,7 +56,6 @@ class SmbServerConfig implements Serializable, Cloneable, Comparable<SmbServerCo
                            String domain, String pf_user, String pf_pass, String pf_addr, String pf_port, String pf_share){
         profileType = "R";
         profileName = pfn;
-        profileActive="A";
         profileDomain = domain;
         profileUser = pf_user;
         profilePass = pf_pass;
@@ -69,8 +69,6 @@ class SmbServerConfig implements Serializable, Cloneable, Comparable<SmbServerCo
     public String getType(){return profileType;}
 	public String getName(){return profileName;}
     public void setName(String name){profileName=name;}
-
-	public String getActive(){return profileActive;}
 
     public String getDomain(){return profileDomain;}
     public void setDomain(String domain){profileDomain=domain;}
@@ -93,7 +91,6 @@ class SmbServerConfig implements Serializable, Cloneable, Comparable<SmbServerCo
     public String getSmbLevel(){return profileSmbLevel;}
     public void setSmbLevel(String level){profileSmbLevel=level;}
 
-    public void setActive(String p){profileActive=p;}
 	public boolean isChecked(){return profileIsChecked;}
 	public void setChecked(boolean p){profileIsChecked=p;}
 

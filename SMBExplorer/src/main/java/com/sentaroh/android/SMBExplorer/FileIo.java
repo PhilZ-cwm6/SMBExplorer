@@ -184,8 +184,7 @@ public class FileIo extends Thread {
 	}
 
 	private JcifsAuth createJcifsAuth(String smb_level, String domain, String user, String pass) {
-	    boolean smb1=smb_level.equals("1")?true:false;
-	    return new JcifsAuth(smb1, domain, user,pass);
+	    return new JcifsAuth(Integer.parseInt(smb_level), domain, user,pass);
     }
 
 	private boolean fileOperation(FileIoLinkParm fiop) {

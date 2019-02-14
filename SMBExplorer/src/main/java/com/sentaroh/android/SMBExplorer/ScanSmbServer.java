@@ -19,6 +19,7 @@ import com.sentaroh.android.Utilities.Dialog.CommonDialog;
 import com.sentaroh.android.Utilities.Dialog.DialogBackKeyListener;
 import com.sentaroh.android.Utilities.NotifyEvent;
 import com.sentaroh.android.Utilities.ThreadCtrl;
+import com.sentaroh.jcifs.JcifsAuth;
 import com.sentaroh.jcifs.JcifsUtil;
 
 import java.io.IOException;
@@ -28,7 +29,6 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -41,13 +41,13 @@ public class ScanSmbServer {
     private GlobalParameters mGp=null;
     private CommonUtilities mUtil=null;
 
-    private boolean mSmb1=false;
+    private int mSmbLevel = JcifsAuth.JCIFS_FILE_SMB211;
     public ScanSmbServer(MainActivity a, GlobalParameters gp, String smb_level) {
         mActivity=a;
         mContext=gp.context;
         mGp=gp;
         mUtil=gp.mUtil;
-        mSmb1=smb_level.equals("1")?true:false;
+        mSmbLevel =Integer.parseInt(smb_level);
     }
 
     public void scanSmbServerDlg(final NotifyEvent p_ntfy, String port_number, boolean scan_start) {
@@ -257,7 +257,7 @@ public class ScanSmbServer {
                     for (int j = i; j < (i + scan_thread); j++) {
                         if (j <= end_addr) {
                             startRemoteNetworkScanThread(handler, tc, dialog, p_ntfy,
-                                    lv_ipaddr, adap, tvmsg, subnet + "." + j, ipAddressList, scan_port, true);
+                                    lv_ipaddr, adap, tvmsg, subnet + "." + j, ipAddressList, scan_port);
                         } else {
                             scan_end = true;
                         }
@@ -335,7 +335,7 @@ public class ScanSmbServer {
                                               final TextView tvmsg,
                                               final String addr,
                                               final ArrayList<AdapterSmbServerList.NetworkScanListItem> ipAddressList,
-                                              final String scan_port, final boolean smb1) {
+                                              final String scan_port) {
         final String scan_prog = mContext.getString(R.string.msgs_scan_netowrk_smb_server_scan_progress);
         Thread th = new Thread(new Runnable() {
             @Override
@@ -344,7 +344,7 @@ public class ScanSmbServer {
                     mScanRequestedAddrList.add(addr);
                 }
                 if (isIpAddrSmbHost(addr, scan_port)) {
-                    final String srv_name = JcifsUtil.getSmbHostNameByAddress(mSmb1, addr);
+                    final String srv_name = JcifsUtil.getSmbHostNameByAddress(mSmbLevel, addr);
                     handler.post(new Runnable() {// UI thread
                         @Override
                         public void run() {
