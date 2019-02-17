@@ -26,8 +26,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 public class FileIoLinkParm {
 	FileIoLinkParm () {}
 	
-    private String fromUrl="", fromDomain="", fromSmbLevel="", fromUser="", fromPass="", fromBaseUrl="", fromName="";
-    private String toUrl="", toDomain="", toSmbLevel="", toUser="", toPass="", toBaseUrl="", toFileName="";
+    private String fromUrl="", fromDomain="", fromSmbLevel="3", fromUser="", fromPass="", fromBaseUrl="", fromName="";
+    private String toUrl="", toDomain="", toSmbLevel="3", toUser="", toPass="", toBaseUrl="", toFileName="";
 
 
 	public void setFromUrl(String url) {fromUrl=url;}

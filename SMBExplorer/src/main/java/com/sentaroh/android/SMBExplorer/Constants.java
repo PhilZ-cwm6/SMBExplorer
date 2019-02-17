@@ -47,7 +47,7 @@ public class Constants {
 	final public static int FILEIO_PARM_MOVE_LOCAL_TO_LOCAL = 13;
 	final public static int FILEIO_PARM_MOVE_LOCAL_TO_REMOTE = 14;
 	final public static int FILEIO_PARM_DOWLOAD_REMOTE_FILE = 15;
-	final public static String SMBEXPLORER_PROFILE_NAME = "profile.txt";
+	final public static String SMBEXPLORER_PROFILE_NAME = "config_list.xml";
 	
 	final public static int MAX_DLG_BOX_SIZE_WIDTH=600; 
 	final public static int MAX_DLG_BOX_SIZE_HEIGHT=0;

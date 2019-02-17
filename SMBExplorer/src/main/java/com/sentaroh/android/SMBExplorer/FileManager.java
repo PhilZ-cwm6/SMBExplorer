@@ -935,8 +935,8 @@ public class FileManager {
 
     private String buildRemoteBase(SmbServerConfig pli) {
         String url="", sep="";
-        if (!pli.getPort().equals("")) sep=":";
-        url = "smb://"+pli.getAddr()+sep+pli.getPort()+"/"+pli.getShare() ;
+        if (!pli.getSmbPort().equals("")) sep=":";
+        url = "smb://"+pli.getSmbHost()+sep+pli.getSmbPort()+"/"+pli.getSmbShare() ;
         return url;
     }
 
@@ -1583,14 +1583,16 @@ public class FileManager {
     }
 
     private void downloadRemoteFile(FileListAdapter fla, FileListItem item, String url, NotifyEvent p_ntfy) {
+        SmbServerConfig smb_item=mGp.smbConfigList.get(mGp.remoteFileListDirSpinner.getSelectedItemPosition());
         mGp.fileioLinkParm.clear();
         FileIoLinkParm fio=new FileIoLinkParm();
         fio.setFromUrl(item.getPath());
         fio.setFromName(item.getName());
+        fio.setFromSmbLevel(smb_item.getSmbLevel());
         fio.setToUrl(mGp.internalRootDirectory+"/Download");
         fio.setToName(item.getName());
-        fio.setFromUser(mGp.currentSmbServerConfig.getUser());
-        fio.setFromPass(mGp.currentSmbServerConfig.getPass());
+        fio.setFromUser(mGp.currentSmbServerConfig.getSmbUser());
+        fio.setFromPass(mGp.currentSmbServerConfig.getSmbPass());
         mGp.fileioLinkParm.add(fio);
         startFileioTask(fla,FILEIO_PARM_DOWLOAD_REMOTE_FILE,mGp.fileioLinkParm, item.getName(),p_ntfy, mGp.internalRootDirectory);
     }
@@ -1769,8 +1771,8 @@ public class FileManager {
 //        fiop.setUrl2(tgt_url2);
 //        fiop.setName(tgt_name);
 //        fiop.setNew(tgt_new);
-//        fiop.setUser(username);
-//        fiop.setPass(password);
+//        fiop.setSmbUser(username);
+//        fiop.setSmbPassword(password);
 //        fiop.setAllCopy(allcopy);
 //
 //        alp.add(fiop);
@@ -1834,8 +1836,8 @@ public class FileManager {
                         FileIoLinkParm fio=new FileIoLinkParm();
                         fio.setToUrl(base_dir);
                         fio.setToName(newName.getText().toString());
-                        fio.setToUser(mGp.currentSmbServerConfig.getUser());
-                        fio.setToPass(mGp.currentSmbServerConfig.getPass());
+                        fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
+                        fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
                         mGp.fileioLinkParm.add(fio);
                     }
                     mUtil.addDebugMsg(1,"I","createItem FILEIO task invoked.");
@@ -1959,12 +1961,12 @@ public class FileManager {
                         FileIoLinkParm fio=new FileIoLinkParm();
                         fio.setFromUrl(from_item.getPath());
                         fio.setFromName(from_item.getName());
-                        fio.setFromUser(mGp.currentSmbServerConfig.getUser());
-                        fio.setFromPass(mGp.currentSmbServerConfig.getPass());
+                        fio.setFromUser(mGp.currentSmbServerConfig.getSmbUser());
+                        fio.setFromPass(mGp.currentSmbServerConfig.getSmbPass());
                         fio.setToUrl(from_item.getPath());
                         fio.setToName(newName.getText().toString());
-                        fio.setToUser(mGp.currentSmbServerConfig.getUser());
-                        fio.setToPass(mGp.currentSmbServerConfig.getPass());
+                        fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
+                        fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
                         mGp.fileioLinkParm.add(fio);
                     }
                     mUtil.addDebugMsg(1,"I","renameItem FILEIO task invoked.");
@@ -2017,8 +2019,8 @@ public class FileManager {
                             FileIoLinkParm fio=new FileIoLinkParm();
                             fio.setToUrl(item.getPath());
                             fio.setToName(item.getName());
-                            fio.setToUser(mGp.currentSmbServerConfig.getUser());
-                            fio.setToPass(mGp.currentSmbServerConfig.getPass());
+                            fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
+                            fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
                             mGp.fileioLinkParm.add(fio);
                         }
                     }
@@ -2052,8 +2054,8 @@ public class FileManager {
             pasteFromUrl=mGp.remoteBase+"/"+mGp.remoteDir;;
             isPasteFromLocal=false;
             pasteFromBase=mGp.remoteBase;
-            pasteFromUser=mGp.currentSmbServerConfig.getUser();
-            pasteFromPass=mGp.currentSmbServerConfig.getPass();
+            pasteFromUser=mGp.currentSmbServerConfig.getSmbUser();
+            pasteFromPass=mGp.currentSmbServerConfig.getSmbPass();
             pasteFromSmbLevel=mGp.currentSmbServerConfig.getSmbLevel();
         }
         //Get selected item names
@@ -2087,8 +2089,8 @@ public class FileManager {
             pasteFromUrl=mGp.remoteBase+"/"+mGp.remoteDir;
             isPasteFromLocal=false;
             pasteFromBase=mGp.remoteBase;
-            pasteFromUser=mGp.currentSmbServerConfig.getUser();
-            pasteFromPass=mGp.currentSmbServerConfig.getPass();
+            pasteFromUser=mGp.currentSmbServerConfig.getSmbUser();
+            pasteFromPass=mGp.currentSmbServerConfig.getSmbPass();
             pasteFromSmbLevel=mGp.currentSmbServerConfig.getSmbLevel();
         }
         //Get selected item names
@@ -2216,7 +2218,7 @@ public class FileManager {
                 @Override
                 public void negativeResponse(Context c,Object[] o) {	}
             });
-            checkRemoteFileExists(mGp.remoteBase, mGp.currentSmbServerConfig.getUser(), mGp.currentSmbServerConfig.getPass(), d_list, ntfy);
+            checkRemoteFileExists(mGp.remoteBase, mGp.currentSmbServerConfig.getSmbUser(), mGp.currentSmbServerConfig.getSmbPass(), d_list, ntfy);
         }
     }
 
@@ -2241,8 +2243,8 @@ public class FileManager {
 
             if (to_dir.startsWith("smb://")) {
                 fio.setToBaseUrl(mGp.remoteBase);
-                fio.setToUser(mGp.currentSmbServerConfig.getUser());
-                fio.setToPass(mGp.currentSmbServerConfig.getPass());
+                fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
+                fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
                 fio.setToSmbLevel(mGp.currentSmbServerConfig.getSmbLevel());
             } else {
                 fio.setToBaseUrl(mGp.localBase);
@@ -2692,7 +2694,7 @@ public class FileManager {
             }
         });
         SmbServerUtil.createSmbServerFileList(mActivity, mGp, opcd,
-                mGp.currentSmbServerConfig.getSmbLevel(), url+"/", mGp.currentSmbServerConfig.getUser(), mGp.currentSmbServerConfig.getPass(),n_event);
+                mGp.currentSmbServerConfig.getSmbLevel(), url+"/", mGp.currentSmbServerConfig.getSmbUser(), mGp.currentSmbServerConfig.getSmbPass(),n_event);
 
     }
 

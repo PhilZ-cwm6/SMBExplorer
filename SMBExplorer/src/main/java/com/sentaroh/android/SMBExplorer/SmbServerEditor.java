@@ -91,7 +91,7 @@ public class SmbServerEditor {
                 checkValidation(mDialog);
             }
         });
-        et_smb_addr.setText(mSmbServerConfigitem.getAddr());
+        et_smb_addr.setText(mSmbServerConfigitem.getSmbHost());
 
         final EditText et_smb_port = (EditText) mDialog.findViewById(R.id.smb_server_item_edit_dlg_port);
         et_smb_port.addTextChangedListener(new TextWatcher() {
@@ -104,7 +104,7 @@ public class SmbServerEditor {
                 checkValidation(mDialog);
             }
         });
-        et_smb_port.setText(mSmbServerConfigitem.getPort());
+        et_smb_port.setText(mSmbServerConfigitem.getSmbPort());
 
         final EditText et_smb_user = (EditText) mDialog.findViewById(R.id.smb_server_item_edit_dlg_user);
         et_smb_user.addTextChangedListener(new TextWatcher() {
@@ -117,7 +117,7 @@ public class SmbServerEditor {
                 checkValidation(mDialog);
             }
         });
-        et_smb_user.setText(mSmbServerConfigitem.getUser());
+        et_smb_user.setText(mSmbServerConfigitem.getSmbUser());
 
         final EditText et_smb_pass = (EditText) mDialog.findViewById(R.id.smb_server_item_edit_dlg_pass);
         et_smb_pass.addTextChangedListener(new TextWatcher() {
@@ -130,7 +130,7 @@ public class SmbServerEditor {
                 checkValidation(mDialog);
             }
         });
-        et_smb_pass.setText(mSmbServerConfigitem.getPass());
+        et_smb_pass.setText(mSmbServerConfigitem.getSmbPass());
 
         final Button btn_list_share = (Button) mDialog.findViewById(R.id.smb_server_item_edit_dlg_list_share);
         final EditText et_smb_share_name = (EditText) mDialog.findViewById(R.id.smb_server_item_edit_dlg_share_name);
@@ -144,7 +144,7 @@ public class SmbServerEditor {
                 checkValidation(mDialog);
             }
         });
-        et_smb_share_name.setText(mSmbServerConfigitem.getShare());
+        et_smb_share_name.setText(mSmbServerConfigitem.getSmbShare());
 
         if (mOpCode.equals("ADD")) {
             et_smb_name.addTextChangedListener(new TextWatcher() {
@@ -217,26 +217,26 @@ public class SmbServerEditor {
             public void onClick(View v) {
                 if (mOpCode.equals("ADD")) {
                     mSmbServerConfigitem.setName(et_smb_name.getText().toString());
-                    mSmbServerConfigitem.setAddr(et_smb_addr.getText().toString());
-                    mSmbServerConfigitem.setPort(et_smb_port.getText().toString());
-                    mSmbServerConfigitem.setUser(et_smb_user.getText().toString());
-                    mSmbServerConfigitem.setPass(et_smb_pass.getText().toString());
-                    mSmbServerConfigitem.setShare(et_smb_share_name.getText().toString());
+                    mSmbServerConfigitem.setSmbHost(et_smb_addr.getText().toString());
+                    mSmbServerConfigitem.setSmbPort(et_smb_port.getText().toString());
+                    mSmbServerConfigitem.setSmbUser(et_smb_user.getText().toString());
+                    mSmbServerConfigitem.setSmbPassword(et_smb_pass.getText().toString());
+                    mSmbServerConfigitem.setSmbShare(et_smb_share_name.getText().toString());
                     mSmbServerConfigitem.setSmbLevel(""+(sp_smb_level.getSelectedItemPosition()+1));
                 } else if (mOpCode.equals("COPY")) {
                     mSmbServerConfigitem.setName(et_smb_name.getText().toString());
-                    mSmbServerConfigitem.setAddr(et_smb_addr.getText().toString());
-                    mSmbServerConfigitem.setPort(et_smb_port.getText().toString());
-                    mSmbServerConfigitem.setUser(et_smb_user.getText().toString());
-                    mSmbServerConfigitem.setPass(et_smb_pass.getText().toString());
-                    mSmbServerConfigitem.setShare(et_smb_share_name.getText().toString());
+                    mSmbServerConfigitem.setSmbHost(et_smb_addr.getText().toString());
+                    mSmbServerConfigitem.setSmbPort(et_smb_port.getText().toString());
+                    mSmbServerConfigitem.setSmbUser(et_smb_user.getText().toString());
+                    mSmbServerConfigitem.setSmbPassword(et_smb_pass.getText().toString());
+                    mSmbServerConfigitem.setSmbShare(et_smb_share_name.getText().toString());
                     mSmbServerConfigitem.setSmbLevel(""+(sp_smb_level.getSelectedItemPosition()+1));
                 } else if (mOpCode.equals("EDIT")) {
-                    mSmbServerConfigitem.setAddr(et_smb_addr.getText().toString());
-                    mSmbServerConfigitem.setPort(et_smb_port.getText().toString());
-                    mSmbServerConfigitem.setUser(et_smb_user.getText().toString());
-                    mSmbServerConfigitem.setPass(et_smb_pass.getText().toString());
-                    mSmbServerConfigitem.setShare(et_smb_share_name.getText().toString());
+                    mSmbServerConfigitem.setSmbHost(et_smb_addr.getText().toString());
+                    mSmbServerConfigitem.setSmbPort(et_smb_port.getText().toString());
+                    mSmbServerConfigitem.setSmbUser(et_smb_user.getText().toString());
+                    mSmbServerConfigitem.setSmbPassword(et_smb_pass.getText().toString());
+                    mSmbServerConfigitem.setSmbShare(et_smb_share_name.getText().toString());
                     mSmbServerConfigitem.setSmbLevel(""+(sp_smb_level.getSelectedItemPosition()+1));
                 }
                 mParentNotify.notifyToListener(true,new Object[]{mSmbServerConfigitem});
@@ -304,11 +304,11 @@ public class SmbServerEditor {
         final EditText et_smb_share_name = (EditText) mDialog.findViewById(R.id.smb_server_item_edit_dlg_share_name);
         final Spinner sp_smb_level = (Spinner) mDialog.findViewById(R.id.smb_server_item_edit_dlg_smb_protocol);
 
-        if (et_smb_addr.getText().toString().equals(mSmbServerConfigitem.getAddr()) &&
-                et_smb_port.getText().toString().equals(mSmbServerConfigitem.getPort()) &&
-                et_smb_user.getText().toString().equals(mSmbServerConfigitem.getUser()) &&
-                et_smb_pass.getText().toString().equals(mSmbServerConfigitem.getPass()) &&
-                et_smb_share_name.getText().toString().equals(mSmbServerConfigitem.getShare()) &&
+        if (et_smb_addr.getText().toString().equals(mSmbServerConfigitem.getSmbHost()) &&
+                et_smb_port.getText().toString().equals(mSmbServerConfigitem.getSmbPort()) &&
+                et_smb_user.getText().toString().equals(mSmbServerConfigitem.getSmbUser()) &&
+                et_smb_pass.getText().toString().equals(mSmbServerConfigitem.getSmbPass()) &&
+                et_smb_share_name.getText().toString().equals(mSmbServerConfigitem.getSmbShare()) &&
                 mSmbServerConfigitem.getSmbLevel().equals(""+(sp_smb_level.getSelectedItemPosition()+1))
                 ) result=false;
         return result;

@@ -10,6 +10,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 class SmbServerConfig implements Serializable, Cloneable, Comparable<SmbServerConfig>{
+    private String profileVersion="1.0.0";
 	private String profileType="R";
 	private String profileName="No name";
     private String profileDomain="";
@@ -54,7 +55,7 @@ class SmbServerConfig implements Serializable, Cloneable, Comparable<SmbServerCo
 
     public SmbServerConfig(String pfn,
                            String domain, String pf_user, String pf_pass, String pf_addr, String pf_port, String pf_share){
-        profileType = "R";
+        profileType = SERVER_TYPE_SMB;
         profileName = pfn;
         profileDomain = domain;
         profileUser = pf_user;
@@ -66,27 +67,32 @@ class SmbServerConfig implements Serializable, Cloneable, Comparable<SmbServerCo
 
     }
 
+    public void setVersion(String version) {profileVersion=version;}
+    public String getVersion() {return profileVersion;}
+
     public String getType(){return profileType;}
+    public static final String SERVER_TYPE_SMB="R";
+    public void setType(String type) {profileType=type;}
 	public String getName(){return profileName;}
     public void setName(String name){profileName=name;}
 
-    public String getDomain(){return profileDomain;}
-    public void setDomain(String domain){profileDomain=domain;}
+    public String getSmbDomain(){return profileDomain;}
+    public void setSmbDomain(String domain){profileDomain=domain;}
 
-    public String getUser(){return profileUser;}
-    public void setUser(String user){profileUser=user;}
+    public String getSmbUser(){return profileUser;}
+    public void setSmbUser(String user){profileUser=user;}
 
-	public String getPass(){return profilePass;}
-    public void setPass(String pass){profilePass=pass;}
+	public String getSmbPass(){return profilePass;}
+    public void setSmbPassword(String pass){profilePass=pass;}
 
-	public String getAddr(){return profileAddr;}
-    public void setAddr(String addr){profileAddr=addr;}
+	public String getSmbHost(){return profileAddr;}
+    public void setSmbHost(String addr){profileAddr=addr;}
 
-	public String getPort(){return profilePort;}
-    public void setPort(String port){profilePort=port;}
+	public String getSmbPort(){return profilePort;}
+    public void setSmbPort(String port){profilePort=port;}
 
-	public String getShare(){return profileShare;}
-    public void setShare(String share){profileShare=share;}
+	public String getSmbShare(){return profileShare;}
+    public void setSmbShare(String share){profileShare=share;}
 
     public String getSmbLevel(){return profileSmbLevel;}
     public void setSmbLevel(String level){profileSmbLevel=level;}

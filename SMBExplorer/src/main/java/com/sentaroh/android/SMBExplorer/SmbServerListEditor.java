@@ -85,6 +85,7 @@ public class SmbServerListEditor {
     private LinearLayout mContextButtonSelectAllView = null;
     private LinearLayout mContextButtonUnselectAllView = null;
 
+    private ArrayList<SmbServerConfig> mSmbConfigList =new ArrayList<SmbServerConfig>();
 
     public SmbServerListEditor(MainActivity a, GlobalParameters gp) {
         mContext = gp.context;
@@ -120,7 +121,8 @@ public class SmbServerListEditor {
 
         final ListView lv = (ListView) mDialog.findViewById(R.id.smb_server_list_edit_dlg_smb_server_list_view);
 
-        mSmbServerListAdapter = new SmbServerListAdapter(mActivity, R.layout.smb_server_list_edit_list_item, mGp.smbConfigList);
+        mSmbConfigList.addAll(mGp.smbConfigList);
+        mSmbServerListAdapter = new SmbServerListAdapter(mActivity, R.layout.smb_server_list_edit_list_item, mSmbConfigList);
         lv.setAdapter(mSmbServerListAdapter);
 
         tv_msg.setText("No SMB server definition");
@@ -199,6 +201,8 @@ public class SmbServerListEditor {
             @Override
             public void onClick(View v) {
                 mSmbServerListAdapter.sort();
+                mGp.smbConfigList.clear();
+                mGp.smbConfigList.addAll(mSmbConfigList);
                 SmbServerUtil.saveSmbServerConfigList(mGp);
                 SmbServerUtil.updateSmbShareSpinner(mGp);
                 SmbServerUtil.replaceCurrentSmbServerConfig(mGp);
@@ -321,6 +325,8 @@ public class SmbServerListEditor {
 
     private void setContextButtonListener(final Dialog dialog) {
         final TextView tv_msg = (TextView) dialog.findViewById(R.id.smb_server_list_edit_dlg_msg);
+        final ImageButton btn_ok = (ImageButton) mDialog.findViewById(R.id.smb_server_list_edit_dlg_save);
+
         mContextButtonAdd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -334,6 +340,8 @@ public class SmbServerListEditor {
                         mSmbServerListAdapter.notifyDataSetChanged();
                         tv_msg.setVisibility(TextView.GONE);
                         setContextButtonMode(dialog, mSmbServerListAdapter);
+                        btn_ok.setEnabled(true);
+                        btn_ok.setAlpha(1.0f);
                     }
 
                     @Override
@@ -363,6 +371,8 @@ public class SmbServerListEditor {
                         }
                         setContextButtonMode(dialog, mSmbServerListAdapter);
                         mSmbServerListAdapter.notifyDataSetChanged();
+                        btn_ok.setEnabled(true);
+                        btn_ok.setAlpha(1.0f);
                     }
 
                     @Override
@@ -393,6 +403,8 @@ public class SmbServerListEditor {
                         mSmbServerListAdapter.sort();
                         mSmbServerListAdapter.unselectAll();
                         setContextButtonMode(dialog, mSmbServerListAdapter);
+                        btn_ok.setEnabled(true);
+                        btn_ok.setAlpha(1.0f);
                     }
 
                     @Override
@@ -425,6 +437,8 @@ public class SmbServerListEditor {
                         mSmbServerListAdapter.add(si);
                         mSmbServerListAdapter.unselectAll();
                         mSmbServerListAdapter.sort();
+                        btn_ok.setEnabled(true);
+                        btn_ok.setAlpha(1.0f);
                     }
 
                     @Override
@@ -625,7 +639,7 @@ public class SmbServerListEditor {
             }
             if (o != null) {
                 holder.tv_name.setText(o.getName());
-                holder.tv_info.setText(o.getAddr()+", "+o.getShare()+", SMB="+o.getSmbLevel());
+                holder.tv_info.setText(o.getSmbHost()+", "+o.getSmbShare()+", SMB="+o.getSmbLevel());
 
                 if (mSelectMode) {
                     holder.cbChecked.setVisibility(CheckBox.VISIBLE);

@@ -4,6 +4,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Handler;
+import android.util.Xml;
 
 import com.sentaroh.android.Utilities.Base64Compat;
 import com.sentaroh.android.Utilities.Dialog.CommonDialog;
@@ -12,20 +13,35 @@ import com.sentaroh.android.Utilities.NotifyEvent;
 import com.sentaroh.android.Utilities.ThreadCtrl;
 import com.sentaroh.android.Utilities.Widget.CustomSpinnerAdapter;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import static android.content.Context.MODE_PRIVATE;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_KEY_STORE_ALIAS;
@@ -44,73 +60,142 @@ public class SmbServerUtil {
         return result;
     }
 
+    static public void saveSmbServerConfigList(GlobalParameters gp) {
+        saveSmbServerConfigList(gp, false, "", "");
+    }
+
+    private static final String CONFIG_TAG_CONFIG="config_list";
+    private static final String CONFIG_TAG_CONFIG_VERSION="version";
+    private static final String CONFIG_TAG_SERVER="server";
+    private static final String CONFIG_TAG_SERVER_NAME="name";
+    private static final String CONFIG_TAG_SERVER_TYPE ="type";
+    private static final String CONFIG_TAG_SERVER_SMB_DOMAIN ="smb_domain";
+    private static final String CONFIG_TAG_SERVER_SMB_USER ="smb_user";
+    private static final String CONFIG_TAG_SERVER_SMB_PASSWORD ="smb_password";
+    private static final String CONFIG_TAG_SERVER_SMB_HOST ="smb_host";
+    private static final String CONFIG_TAG_SERVER_SMB_PORT ="smb_port";
+    private static final String CONFIG_TAG_SERVER_SMB_SHARE ="smb_share";
+    private static final String CONFIG_TAG_SERVER_SMB_LEVEL ="smb_level";
+
     static public ArrayList<SmbServerConfig> createSmbServerConfigList(GlobalParameters gp, boolean sdcard, String fp) {
-        BufferedReader br = null;
+
         ArrayList<SmbServerConfig> rem = new ArrayList<SmbServerConfig>();
-        boolean error=false;
+        boolean init_smb_list=false;
+        InputStream fis = null;
         try {
             String priv_key=null;
             EncryptUtil.CipherParms cp_int=null;
             if (sdcard) {
                 File sf = new File(fp);
                 if (sf.exists()) {
-                    br = new BufferedReader(new FileReader(fp));
+                    fis = new FileInputStream(sf);
                 } else {
-                    gp.commonDlg.showCommonDialog(false,"E",
-                            String.format(gp.context.getString(R.string.msgs_local_file_list_create_nfound), fp),"",null);
-                    error=true;
+                    gp.commonDlg.showCommonDialog(false,"E", String.format(gp.context.getString(R.string.msgs_local_file_list_create_nfound), fp),"",null);
+                    init_smb_list=true;
                 }
             } else {
                 priv_key=KeyStoreUtil.getGeneratedPasswordNewVersion(gp.context, SMBEXPLORER_KEY_STORE_ALIAS);
                 cp_int= EncryptUtil.initDecryptEnv(priv_key);
-
-                InputStream in = gp.context.openFileInput(SMBEXPLORER_PROFILE_NAME);
-                br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+                fis = gp.context.openFileInput(SMBEXPLORER_PROFILE_NAME);
             }
-            if (!error) {
-                String pl="", dec_pl="";
-                String[] alp;
-                while ((pl = br.readLine()) != null) {
-                    if (sdcard) dec_pl=pl;
-                    else {
-                        byte[] dec_array = Base64Compat.decode(pl, Base64Compat.NO_WRAP);
-                        dec_pl = EncryptUtil.decrypt(dec_array, cp_int);
+            if (!init_smb_list) {
+                XmlPullParser xpp = Xml.newPullParser();
+                xpp.setInput(new BufferedReader(new InputStreamReader(fis)));
+                int eventType = xpp.getEventType();
+                String config_ver="";
+                while(eventType != XmlPullParser.END_DOCUMENT){
+                    switch(eventType){
+                        case XmlPullParser.START_DOCUMENT:
+                            gp.mUtil.addDebugMsg(2,"I","createSmbServerConfigList Start Document");
+                            break;
+                        case XmlPullParser.START_TAG:
+                            gp.mUtil.addDebugMsg(2,"I","createSmbServerConfigList Start Tag="+xpp.getName());
+                            if (xpp.getName().equals(CONFIG_TAG_CONFIG)) {
+                                if (xpp.getAttributeCount()==1) {
+                                    config_ver=xpp.getAttributeValue(0);
+                                    gp.mUtil.addDebugMsg(2,"I","createSmbServerConfigList Version="+xpp.getAttributeValue(0));
+                                }
+                            } else if (xpp.getName().equals(CONFIG_TAG_SERVER)) {
+                                SmbServerConfig smb_item=createSmbServerConfigItemFromXmlTag(gp, xpp, cp_int);
+                                smb_item.setVersion(config_ver);
+                                rem.add(smb_item);
+                            }
+                            break;
+                        case XmlPullParser.TEXT:
+                            gp.mUtil.addDebugMsg(2,"I","createSmbServerConfigList Text=" + xpp.getText()+", name="+xpp.getName());
+                            break;
+                        case XmlPullParser.END_TAG:
+                            gp.mUtil.addDebugMsg(2,"I", "createSmbServerConfigList End Tag="+xpp.getName());
+                            break;
+                        case XmlPullParser.END_DOCUMENT:
+                            gp.mUtil.addDebugMsg(2,"I", "createSmbServerConfigList End Document="+xpp.getName());
+                            break;
                     }
-                    alp = parseSmbServerConfigString(dec_pl);
-//                    public SmbServerConfig(String pfn,
-//                            String domain, String pf_user, String pf_pass, String pf_addr, String pf_port, String pf_share){
-                    SmbServerConfig sc=new SmbServerConfig(alp[1], "", alp[3], alp[4], alp[5], alp[6], alp[7]);
-                    sc.setSmbLevel(alp[9]);
-                    rem.add(sc);
+                    eventType = xpp.next();
                 }
-                br.close();
+                gp.mUtil.addDebugMsg(2,"I","createSmbServerConfigList End of document");
+
+                fis.close();
             }
+        } catch (XmlPullParserException e) {
+            gp.mUtil.addDebugMsg(1,"I","createSmbServerConfigList XML Parse error, error="+e.getMessage());
+            e.printStackTrace();
+            init_smb_list=true;
         } catch (FileNotFoundException e) {
             if (sdcard) {
-                gp.mUtil.addDebugMsg(0,"E",e.toString());
+                gp.mUtil.addDebugMsg(1,"E",e.toString());
                 gp.commonDlg.showCommonDialog(false,"E", gp.context.getString(R.string.msgs_exception),e.toString(),null);
             }
-            error=true;
+            init_smb_list=true;
         } catch (IOException e) {
             gp.mUtil.addDebugMsg(0,"E",e.toString());
             gp.commonDlg.showCommonDialog(false,"E", gp.context.getString(R.string.msgs_exception),e.toString(),null);
-            error=true;
+            init_smb_list=true;
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if (error) {
-            rem.add(new SmbServerConfig("HOME-D","", "Android", "", "192.168.200.128", "","D"));
-            rem.add(new SmbServerConfig("HOME-E", "", "Android", "", "192.168.200.128", "","E"));
-            rem.add(new SmbServerConfig("HOME-F", "", "Android", "", "192.168.200.128", "","F"));
-            rem.add(new SmbServerConfig("SRV-D",  "", "Android", "", "192.168.200.10",  "","D"));
-        }
         Collections.sort(rem);
-
+        if (init_smb_list) {
+            rem.add(new SmbServerConfig("HOME-D", "", "","","192.168.200.128", "", "D"));
+            rem.add(new SmbServerConfig("HOME-E", "", "","","192.168.200.128", "", "E"));
+            rem.add(new SmbServerConfig("HOME-F", "", "","","192.168.200.128", "", "F"));
+        }
         return rem;
     }
 
-    static public void saveSmbServerConfigList(GlobalParameters gp) {
-        saveSmbServerConfigList(gp, false, "", "");
+    static private SmbServerConfig createSmbServerConfigItemFromXmlTag(GlobalParameters gp, XmlPullParser xpp, EncryptUtil.CipherParms cp_int) {
+        SmbServerConfig smb_item=new SmbServerConfig();
+        int ac=xpp.getAttributeCount();
+        for(int i=0;i<ac;i++) {
+            gp.mUtil.addDebugMsg(2,"I","createSmbServerConfigItemFromXmlTag Attribute="+xpp.getAttributeName(i)+", Value="+xpp.getAttributeValue(i));
+            if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_NAME)) {smb_item.setName(xpp.getAttributeValue(i));}
+            else if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_TYPE)) {smb_item.setType(xpp.getAttributeValue(i));}
+            else if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_SMB_DOMAIN)) {smb_item.setSmbDomain(xpp.getAttributeValue(i));}
+            else if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_SMB_USER)) {
+                if (!xpp.getAttributeValue(i).equals("")) {
+                    try {
+                        byte[] dec_array = Base64Compat.decode(xpp.getAttributeValue(i), Base64Compat.NO_WRAP);
+                        String dec_str = EncryptUtil.decrypt(dec_array, cp_int);
+                        smb_item.setSmbUser(dec_str);
+                    } catch(Exception e) {
+                    }
+                }
+            } else if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_SMB_PASSWORD)) {
+                if (!xpp.getAttributeValue(i).equals("")) {
+                    try {
+                        byte[] dec_array = Base64Compat.decode(xpp.getAttributeValue(i), Base64Compat.NO_WRAP);
+                        String dec_str = EncryptUtil.decrypt(dec_array, cp_int);
+                        smb_item.setSmbPassword(dec_str);
+                    } catch(Exception e) {
+                    }
+                }
+            } else if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_SMB_HOST)) {smb_item.setSmbHost(xpp.getAttributeValue(i));}
+            else if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_SMB_PORT)) {smb_item.setSmbPort(xpp.getAttributeValue(i));}
+            else if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_SMB_SHARE)) {smb_item.setSmbShare(xpp.getAttributeValue(i));}
+            else if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_SMB_LEVEL)) {smb_item.setSmbLevel(xpp.getAttributeValue(i));}
+
+        }
+        return smb_item;
     }
 
     static public void saveSmbServerConfigList(GlobalParameters gp, boolean sdcard, String fd, String fn) {
@@ -119,78 +204,86 @@ public class SmbServerUtil {
         try {
             String priv_key=null;
             EncryptUtil.CipherParms cp_int=null;
-
+            OutputStream profile_out=null;
             if (sdcard) {
                 File lf = new File(fd);
                 if (!lf.exists()) lf.mkdir();
-                bw = new BufferedWriter(new FileWriter(fd+"/"+fn));
-                pw = new PrintWriter(bw);
+                profile_out=new FileOutputStream(new File(fd+"/"+fn));
             } else {
                 priv_key=KeyStoreUtil.getGeneratedPasswordNewVersion(gp.context, SMBEXPLORER_KEY_STORE_ALIAS);
                 cp_int= EncryptUtil.initDecryptEnv(priv_key);
 
-                OutputStream out = gp.context.openFileOutput(SMBEXPLORER_PROFILE_NAME, MODE_PRIVATE);
-                pw = new PrintWriter(new OutputStreamWriter(out, "UTF-8"));
+                profile_out=gp.context.openFileOutput(SMBEXPLORER_PROFILE_NAME, MODE_PRIVATE);
             }
 
-            if (gp.smbConfigList !=null) {
-                for (int i = 0; i <= (gp.smbConfigList.size() - 1); i++) {
-                    SmbServerConfig item = gp.smbConfigList.get(i);
-                    if (item.getType().equals("R")) {
+            if (gp.smbConfigList !=null && gp.smbConfigList.size()>0) {
+                try {
+                    DocumentBuilderFactory dbfactory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder dbuilder = dbfactory.newDocumentBuilder();
+
+                    Document main_document = dbuilder.newDocument();
+                    Element config_tag = main_document.createElement(CONFIG_TAG_CONFIG);
+                    config_tag.setAttribute(CONFIG_TAG_CONFIG_VERSION, "1.0.2");
+//                    root.appendChild(document.createTextNode("1.0.0"));
+
+                    for(SmbServerConfig item:gp.smbConfigList) {
+                        Element server_tag = main_document.createElement(CONFIG_TAG_SERVER);
+                        server_tag.setAttribute(CONFIG_TAG_SERVER_NAME, item.getName());
+                        config_tag.appendChild(server_tag);
+
+                        server_tag.setAttribute(CONFIG_TAG_SERVER_TYPE, item.getType());
+                        server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_DOMAIN, item.getSmbDomain());
                         if (sdcard) {
-                            String pl = item.getType() + "\t"   //0
-                                    + item.getName() + "\t"     //1
-                                    + "" + "\t"                 //2
-                                    + item.getUser() + "\t"     //3
-                                    + "" + "\t"                 //4 Do not save password
-                                    + item.getAddr() + "\t"     //5
-                                    + item.getPort() + "\t"     //6
-                                    + item.getShare()+ "\t"     //7
-                                    + item.getDomain()+ "\t"    //8
-                                    + item.getSmbLevel()+ "\t"  //9
-                                    ;
-                            pw.println(pl);
+                            //Do not write User and Password data
                         } else {
-                            String pl = item.getType() + "\t"   //0
-                                    + item.getName() + "\t"     //1
-                                    + "" + "\t"                 //2
-                                    + item.getUser() + "\t"     //3
-                                    + item.getPass() + "\t"     //4
-                                    + item.getAddr() + "\t"     //5
-                                    + item.getPort() + "\t"     //6
-                                    + item.getShare()+ "\t"     //7
-                                    + item.getDomain()+ "\t"    //8
-                                    + item.getSmbLevel()+ "\t"  //9
-                                    ;
-                            String enc =Base64Compat.encodeToString(EncryptUtil.encrypt(pl, cp_int), Base64Compat.NO_WRAP);
-                            pw.println(enc);
+                            if (item.getSmbUser()!=null && !item.getSmbUser().equals("")) {
+                                String enc =Base64Compat.encodeToString(EncryptUtil.encrypt(item.getSmbUser(), cp_int), Base64Compat.NO_WRAP);
+                                server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_USER, enc);
+                            }
+                            if (!item.getSmbPass().equals("")) {
+                                String enc =Base64Compat.encodeToString(EncryptUtil.encrypt(item.getSmbPass(), cp_int), Base64Compat.NO_WRAP);
+                                server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_PASSWORD, enc);
+                            }
                         }
+                        server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_HOST, item.getSmbHost());
+                        server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_PORT, item.getSmbPort());
+                        server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_SHARE, item.getSmbShare());
+                        server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_LEVEL, item.getSmbLevel());
                     }
+
+                    main_document.appendChild(config_tag);
+
+                    TransformerFactory tffactory = TransformerFactory.newInstance();
+                    Transformer transformer = tffactory.newTransformer();
+                    StringWriter sw=new StringWriter();
+                    transformer.transform(new DOMSource(main_document), new StreamResult(sw));
+                    sw.flush();
+                    sw.close();
+                    pw = new PrintWriter(new OutputStreamWriter(profile_out, "UTF-8"));
+                    String prof=sw.toString().replaceAll("<"+CONFIG_TAG_CONFIG, "\n<"+CONFIG_TAG_CONFIG)
+                            .replaceAll("</"+CONFIG_TAG_CONFIG, "\n</"+CONFIG_TAG_CONFIG)
+                            .replaceAll("<"+CONFIG_TAG_SERVER,"\n     <"+CONFIG_TAG_SERVER);
+                    pw.println(prof);
+                    pw.flush();
+                    pw.close();
+                    gp.mUtil.addDebugMsg(2,"I","out=\n"+prof);
+                }catch (TransformerConfigurationException e) {
+                    e.printStackTrace();
+                } catch (TransformerException e) {
+                    e.printStackTrace();
                 }
+
             }
-            pw.close();
-//            bw.close();
+//            profile_out.flush();
+//            profile_out.close();
         } catch (IOException e) {
             gp.mUtil.addDebugMsg(0,"E",e.toString());
             gp.commonDlg.showCommonDialog(false,"E",gp.context.getString(R.string.msgs_exception),e.toString(),null);
         } catch (Exception e) {
             e.printStackTrace();
+            gp.mUtil.addDebugMsg(0,"E",e.toString());
+            gp.commonDlg.showCommonDialog(false,"E",gp.context.getString(R.string.msgs_exception),e.toString(),null);
         }
-    }
-
-    static private String[] parseSmbServerConfigString(String text) {
-
-        String[] parm = new String[100];
-        String[] parm_t = text.split("\t");
-
-        for (int i = 0; i < parm.length; i++) {
-            if (i<parm_t.length) {
-                if (parm_t[i].length()==0) parm[i] = "";
-                else parm[i] = parm_t[i];
-            } else parm[i] = "";
-        }
-        return parm;
-
     }
 
     static public void importSmbServerConfigDlg(GlobalParameters gp, final String curr_dir, String file_name) {

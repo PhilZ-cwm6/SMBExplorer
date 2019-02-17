@@ -176,6 +176,7 @@ public class MainActivity extends AppCompatActivity {
 //        long target=1534738805000L, master=1534738463738L;
 //        Log.v("","taget="+ StringUtil.convDateTimeTo_YearMonthDayHourMinSecMili(target));
 //        Log.v("","master="+ StringUtil.convDateTimeTo_YearMonthDayHourMinSecMili(master));
+
     }
 
 	@Override
