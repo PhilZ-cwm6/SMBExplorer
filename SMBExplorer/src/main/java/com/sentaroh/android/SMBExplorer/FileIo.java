@@ -595,6 +595,7 @@ public class FileIo extends Thread {
             }
 //			Log.v("","name="+iLf.getName()+", d="+iLf.isDirectory()+", r="+iLf.canRead());
 			if (isDirectory) { // Directory copy
+                makeLocalDirsByDirectoryPath(toUrl);
                 if (fromUrl.startsWith(mGp.safMgr.getUsbRootPath())) {
                     SafFile[] children = from_saf.listFiles();
                     for (SafFile element : children) {
@@ -611,7 +612,7 @@ public class FileIo extends Thread {
                     }
                 }
 			} else { // file copy
-                makeLocalDirs(toUrl);
+                makeLocalDirsByFilePath(toUrl);
                 result=copyFileLocalToLocal(iLf,fromUrl,toUrl,"Copying");
 			}
 		} catch (IOException e) {
@@ -662,16 +663,16 @@ public class FileIo extends Thread {
 				result=true;
 				ihf = new JcifsFile(fromUrl+"/",smb_auth_from);
 				ohf = new JcifsFile(toUrl,smb_auth_to);
-				
+                makeRemoteDirsByDirectoryPath(smb_auth_to, toUrl+"/");
+
 				String[] children = ihf.list();
 				for (String element : children) {
 					if (!fileioThreadCtrl.isEnabled()) return false;
 	            	boolean success=copyRemoteToRemote(smb_auth_from, smb_auth_to, fromUrl+"/"+element, toUrl+"/"+element );
 	            	if (!success) return false;
 	            }
-				makeRemoteDirs(smb_auth_to, toUrl+"/");
 			} else { // file copy
-				makeRemoteDirs(smb_auth_to, toUrl);
+				makeRemoteDirsByFilePath(smb_auth_to, toUrl);
 				tmp_toUrl=makeRemoteTempFilePath(toUrl);
 				
 				ohf = new JcifsFile(tmp_toUrl,smb_auth_to);
@@ -729,7 +730,8 @@ public class FileIo extends Thread {
 			hf = new JcifsFile(fromUrl ,smb_auth);
 			if (hf.isDirectory()) { // Directory copy
 				result=true;
-				hfd = new JcifsFile(fromUrl+"/",smb_auth);
+                makeLocalDirsByDirectoryPath(toUrl);
+                hfd = new JcifsFile(fromUrl+"/",smb_auth);
 				String[] children = hfd.list();
 				for (String element : children) {
 					if (!fileioThreadCtrl.isEnabled()) return false;
@@ -739,7 +741,6 @@ public class FileIo extends Thread {
 					
 			} else { // file copy
 				if (hf.getAttributes()<16384) { //no EA, copy was done
-					makeLocalDirs(toUrl);
 					lf=new File(toUrl);
 					result=copyFileRemoteToLocal(hf, lf,toUrl, fromUrl,"Copying");
 				} else {
@@ -790,6 +791,7 @@ public class FileIo extends Thread {
 
 			if (isDirectory) { // Directory copy
 				result=true;
+                makeRemoteDirsByDirectoryPath(smb_auth, toUrl);
                 if (fromUrl.startsWith(mGp.safMgr.getUsbRootPath())) {
                     SafFile[] children = from_saf.listFiles();
                     for (SafFile element : children) {
@@ -807,7 +809,7 @@ public class FileIo extends Thread {
                 }
 
             } else { // file copy
-				makeRemoteDirs(smb_auth, toUrl);
+				makeRemoteDirsByFilePath(smb_auth, toUrl);
 				tmp_toUrl=makeRemoteTempFilePath(toUrl);
 				ohf = new JcifsFile(tmp_toUrl,smb_auth);
 				if (ohf.exists()) ohf.delete();
@@ -870,7 +872,7 @@ public class FileIo extends Thread {
                     if (!moveLocalToLocal(fromUrl+"/"+element.getName(), toUrl+"/"+element.getName() ))
                         return false;
                }
-                makeLocalDirs(toUrl+"/");
+                makeLocalDirsByFilePath(toUrl+"/");
                 from_saf.delete();
                 sendLogMsg("I",fromUrl+" was moved.");
             } else {
@@ -880,7 +882,7 @@ public class FileIo extends Thread {
                     if (!moveLocalToLocal(fromUrl+"/"+element, toUrl+"/"+element ))
                         return false;
                 }
-                makeLocalDirs(toUrl+"/");
+                makeLocalDirsByFilePath(toUrl+"/");
                 if (fromUrl.startsWith(mGp.safMgr.getSdcardRootPath())) {
                     SafFile dsf=mGp.safMgr.createSdcardItem(fromUrl,true);
                     dsf.delete();
@@ -892,7 +894,7 @@ public class FileIo extends Thread {
 
 		} else { // file rename
 			if (!fileioThreadCtrl.isEnabled()) return false;
-			makeLocalDirs(toUrl);
+			makeLocalDirsByFilePath(toUrl);
 
 			if (isSameMountPoint(fromUrl,toUrl) && !fromUrl.startsWith(mGp.safMgr.getSdcardRootPath())
                     && !fromUrl.startsWith(mGp.safMgr.getUsbRootPath())) { // renameでMoveする
@@ -974,12 +976,12 @@ public class FileIo extends Thread {
 	            	boolean success= moveRemoteToRemoteByRename(smb_auth_from, smb_auth_to, fromUrl+"/"+element, toUrl+"/"+element );
 	            	if (!success) return false;
 	            }
-				makeRemoteDirs(smb_auth_to, toUrl+"/");
+				makeRemoteDirsByFilePath(smb_auth_to, toUrl+"/");
 				ihf.delete();
 				sendLogMsg("I",fromUrl+" was deleted.");
 			} else { // file move
 				if (!fileioThreadCtrl.isEnabled()) return false;
-				makeRemoteDirs(smb_auth_to, toUrl);
+				makeRemoteDirsByFilePath(smb_auth_to, toUrl);
 
                 ohf=new JcifsFile(toUrl+"/",smb_auth_to);
                 if (ohf.exists()) ohf.delete();
@@ -1027,7 +1029,7 @@ public class FileIo extends Thread {
 					
 			} else { // file copy
 				if (hf.getAttributes()<16384) { //no EA, copy was done
-					makeLocalDirs(toUrl);
+					makeLocalDirsByFilePath(toUrl);
 					result=true;
 					lf=new File(toUrl);
 					if (!isFileDifferent(hf.getLastModified(),hf.length(),lf.lastModified(),lf.length())) {
@@ -1236,8 +1238,9 @@ public class FileIo extends Thread {
     private boolean copyFileLocalToUsb_API24(File iLf, String fromUrl, String toUrl, String title_header) throws IOException, JcifsException {
         long b_time=System.currentTimeMillis();
         boolean result=false;
-        File tmp_file=new File(mGp.safMgr.getUsbRootPath()+"/"+APP_SPECIFIC_DIRECTORY+"/files/"+System.currentTimeMillis());
-        SafFile temp_saf = mGp.safMgr.createUsbItem(tmp_file.getPath(), false);
+        String fn=toUrl.substring(toUrl.lastIndexOf("/")+1);
+        File tmp_file=new File(mGp.safMgr.getUsbRootPath()+"/"+APP_SPECIFIC_DIRECTORY+"/files/"+fn);
+//        SafFile temp_saf = mGp.safMgr.createUsbItem(tmp_file.getPath(), false);
         OutputStream bos = new FileOutputStream(tmp_file);
 //        BufferedOutputStream bos=new BufferedOutputStream(os, 1024*1024*8);
         FileAttributes ifa= getInputFileAttribute(fromUrl);
@@ -1246,7 +1249,9 @@ public class FileIo extends Thread {
         if (result) {
             boolean slm=tmp_file.setLastModified(ifa.lastMod);
             SafFile dest_saf = mGp.safMgr.createUsbItem(toUrl, false);
-            result=temp_saf.moveTo(dest_saf);
+            SafFile temp_saf = mGp.safMgr.createUsbItem(tmp_file.getPath(), false);
+            dest_saf.deleteIfExists();
+            result=temp_saf.moveToCC(dest_saf);
             if (result) {
                 scanMediaStoreLibraryFile(toUrl);
             } else {
@@ -1283,8 +1288,8 @@ public class FileIo extends Thread {
     private boolean copyFileLocalToSdcard_API24(File iLf, String fromUrl, String toUrl, String title_header) throws IOException, JcifsException {
         long b_time=System.currentTimeMillis();
         boolean result=false;
-        File tmp_file=new File(mGp.safMgr.getSdcardRootPath()+"/"+APP_SPECIFIC_DIRECTORY+"/files/"+System.currentTimeMillis());
-        SafFile temp_saf = mGp.safMgr.createSdcardItem(tmp_file.getPath(), false);
+        String fn=toUrl.substring(toUrl.lastIndexOf("/")+1);
+        File tmp_file=new File(mGp.safMgr.getSdcardRootPath()+"/"+APP_SPECIFIC_DIRECTORY+"/files/"+fn);
         OutputStream bos = new FileOutputStream(tmp_file);
 //        BufferedOutputStream bos=new BufferedOutputStream(os, 1024*1024*8);
         FileAttributes ifa= getInputFileAttribute(fromUrl);
@@ -1292,8 +1297,13 @@ public class FileIo extends Thread {
         result=copyFile(ifa.is, bos, tmp_file, ifa.fileBytes, title_header, ifa.fileName, fromUrl, toUrl);
         if (result) {
             boolean slm=tmp_file.setLastModified(ifa.lastMod);
+            SafFile temp_saf = mGp.safMgr.createSdcardItem(tmp_file.getPath(), false);
             SafFile dest_saf = mGp.safMgr.createSdcardItem(toUrl, false);
-            result=temp_saf.moveTo(dest_saf);
+//            if (dest_saf.exists()) dest_saf.delete();
+            dest_saf.deleteIfExists();
+//            tmp_file.delete();
+//            result=temp_saf.moveTo(dest_saf);
+            result=temp_saf.moveToCC(dest_saf);
             if (result) {
                 scanMediaStoreLibraryFile(toUrl);
             } else {
@@ -1508,7 +1518,7 @@ public class FileIo extends Thread {
     	return result;
     };
     
-	private boolean makeRemoteDirs(JcifsAuth smb_auth, String targetPath)
+	private boolean makeRemoteDirsByFilePath(JcifsAuth smb_auth, String targetPath)
 					throws MalformedURLException, JcifsException {
 		boolean result=false;
 		String target_dir1="";
@@ -1523,25 +1533,39 @@ public class FileIo extends Thread {
 			target_dir2=target_dir1.substring(0,target_dir1.lastIndexOf("/"));
 		}
 
-		JcifsFile hf = new JcifsFile(target_dir2 + "/",smb_auth);
-		if (!hf.exists()) {
-			hf.mkdirs();
-		}
+        result=makeRemoteDirsByDirectoryPath(smb_auth, target_dir2 + "/");
 		return result;
-	};
-	
-	private boolean makeLocalDirs(String targetPath) {
+	}
+
+    private boolean makeRemoteDirsByDirectoryPath(JcifsAuth smb_auth, String targetPath)
+            throws MalformedURLException, JcifsException {
+        boolean result=false;
+        JcifsFile hf = new JcifsFile(targetPath + "/",smb_auth);
+        if (!hf.exists()) {
+            hf.mkdirs();
+        }
+        return result;
+    };
+
+
+    private boolean makeLocalDirsByFilePath(String targetPath) {
 		boolean result=false;
 		String target_dir="";
 		if (targetPath.lastIndexOf("/")<=0) return false;
 		else target_dir=targetPath.substring(0,targetPath.lastIndexOf("/"));
-		if (targetPath.startsWith(mGp.safMgr.getUsbRootPath())) {
-		    SafFile sf=mGp.safMgr.createUsbDirectory(target_dir);
+		result=makeLocalDirsByDirectoryPath(target_dir);
+		return result;
+	};
+
+    private boolean makeLocalDirsByDirectoryPath(String targetPath) {
+        boolean result=false;
+        if (targetPath.startsWith(mGp.safMgr.getUsbRootPath())) {
+            SafFile sf=mGp.safMgr.createUsbDirectory(targetPath);
         } else {
-            File lf = new File(target_dir);
+            File lf = new File(targetPath);
             if (!lf.exists()) {
                 if (Build.VERSION.SDK_INT>=21 && targetPath.startsWith(mGp.safMgr.getSdcardRootPath())) {
-                    SafFile t_sf=mGp.safMgr.createSdcardDirectory(target_dir);
+                    SafFile t_sf=mGp.safMgr.createSdcardDirectory(targetPath);
                     result=t_sf==null?false:true;
                 } else {
                     lf.mkdirs();
@@ -1549,10 +1573,11 @@ public class FileIo extends Thread {
                 }
             }
         }
-		return result;
-	};
-	
-	private String calTransferRate(long tb, long tt) {
+        return result;
+    }
+
+    private String calTransferRate(long tb, long tt) {
+	    if (tt==0L) return "????";
 	    String tfs = null;
 	    BigDecimal bd_tr;
 	    if (tb>(1024)) {//KB

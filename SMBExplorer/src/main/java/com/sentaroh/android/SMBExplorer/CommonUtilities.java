@@ -197,7 +197,8 @@ public final class CommonUtilities {
     };
 	
 	public void initAppSpecificExternalDirectory(Context c) {
-		ContextCompat.getExternalFilesDirs(c, null);
+//		ContextCompat.getExternalFilesDirs(c, null);
+        c.getExternalFilesDirs(null);
 	};
 	
 	public boolean isWifiActive() { 

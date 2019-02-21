@@ -153,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
 
 		mUtil.addDebugMsg(1, "I", "onCreate entered");
 		mIsApplicationTerminate = false;
-		ContextCompat.getExternalFilesDirs(mContext, null);
+		mContext.getExternalFilesDirs(null);
         restartStatus=0;
 
         checkRequiredPermissions();

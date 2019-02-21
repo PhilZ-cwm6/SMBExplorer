@@ -2600,8 +2600,8 @@ public class FileManager {
                                     if (url.equals("")) s_url=ff.getName();
                                     else s_url=url+"/"+ff.getName();
                                     SafFile tlf=mGp.safMgr.findUsbItem(s_url);
-                                    String[] sfl=tlf.list();
-                                    for(String nm:sfl) mUtil.addDebugMsg(1,"I", "list="+nm);
+//                                    String[] sfl=tlf.list();
+//                                    for(String nm:sfl) mUtil.addDebugMsg(1,"I", "list="+nm);
                                     SafFile[] tfl=tlf.listFiles();
                                     int sdc=0;
                                     if (tfl!=null) sdc=tfl.length;
