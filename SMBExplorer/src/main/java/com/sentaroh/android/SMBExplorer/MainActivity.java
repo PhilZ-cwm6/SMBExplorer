@@ -851,7 +851,7 @@ public class MainActivity extends AppCompatActivity {
 	            if (mGp.safMgr.isUsbUuid(SafManager.getUuidFromUri(data.getData().toString()))) {
                     if (mGp.safMgr.isRootTreeUri(data.getData())) {
                         mGp.safMgr.addUsbUuid(data.getData());
-                        mGp.safMgr.loadSafFile();
+                        mGp.safMgr.loadSafFileNoUsbMountPoint();
                         mFileMgr.updateLocalDirSpinner();
                     } else {
                         NotifyEvent ntfy=new NotifyEvent(mContext);
@@ -868,7 +868,7 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     if (mGp.safMgr.isRootTreeUri(data.getData())) {
                         mGp.safMgr.addSdcardUuid(data.getData());
-                        mGp.safMgr.loadSafFile();
+                        mGp.safMgr.loadSafFileNoUsbMountPoint();
                         mFileMgr.updateLocalDirSpinner();
                     } else {
                         NotifyEvent ntfy=new NotifyEvent(mContext);
@@ -975,7 +975,7 @@ public class MainActivity extends AppCompatActivity {
                         mUtil.addDebugMsg(1,"I",device.toString());
                         boolean success=false;
                         for(int i=0;i<10;i++) {
-                            mGp.safMgr.loadSafFile();
+                            mGp.safMgr.loadSafFileNoUsbMountPoint();
                             if (mGp.safMgr.isUsbMounted()) {
                                 mFileMgr.updateLocalDirSpinner();
                                 Toast.makeText(c,"USB flash memory attach process was successfull", Toast.LENGTH_SHORT).show();
@@ -998,7 +998,7 @@ public class MainActivity extends AppCompatActivity {
                                     "USB Flashメモリーが取り付けられましたが認識できませんでした。ストレージ設定を表示しますか?","",ntfy);
                         }
                     } else {
-                        mGp.safMgr.loadSafFile();
+                        mGp.safMgr.loadSafFileNoUsbMountPoint();
                         mFileMgr.updateLocalDirSpinner();
                         Toast.makeText(c,"USB flash memory detach process was successfull", Toast.LENGTH_SHORT).show();
                     }

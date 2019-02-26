@@ -1070,7 +1070,7 @@ public class FileIo extends Thread {
             }
         } else if (toUrl.startsWith(mGp.safMgr.getUsbRootPath())) {
             if (Build.VERSION.SDK_INT>=24) {
-                result=copyFileLocalToUsb_API24(iLf, fromUrl, toUrl, title_header);
+                result=copyFileLocalToUsb_API21(iLf, fromUrl, toUrl, title_header);
             } else {
                 result= copyFileLocalToUsb_API21(iLf, fromUrl, toUrl, title_header);
             }
@@ -1235,36 +1235,6 @@ public class FileIo extends Thread {
         return copy_success;
     }
 
-    private boolean copyFileLocalToUsb_API24(File iLf, String fromUrl, String toUrl, String title_header) throws IOException, JcifsException {
-        long b_time=System.currentTimeMillis();
-        boolean result=false;
-        String fn=toUrl.substring(toUrl.lastIndexOf("/")+1);
-        File tmp_file=new File(mGp.safMgr.getUsbRootPath()+"/"+APP_SPECIFIC_DIRECTORY+"/files/"+fn);
-//        SafFile temp_saf = mGp.safMgr.createUsbItem(tmp_file.getPath(), false);
-        OutputStream bos = new FileOutputStream(tmp_file);
-//        BufferedOutputStream bos=new BufferedOutputStream(os, 1024*1024*8);
-        FileAttributes ifa= getInputFileAttribute(fromUrl);
-
-        result=copyFile(ifa.is, bos, tmp_file, ifa.fileBytes, title_header, ifa.fileName, fromUrl, toUrl);
-        if (result) {
-            boolean slm=tmp_file.setLastModified(ifa.lastMod);
-            SafFile dest_saf = mGp.safMgr.createUsbItem(toUrl, false);
-            SafFile temp_saf = mGp.safMgr.createUsbItem(tmp_file.getPath(), false);
-            dest_saf.deleteIfExists();
-            result=temp_saf.moveToCC(dest_saf);
-            if (result) {
-                scanMediaStoreLibraryFile(toUrl);
-            } else {
-                temp_saf.delete();
-                sendLogMsg("I","Copy was failed, be cause can not renamed. Rename from="+fromUrl+" to="+toUrl);
-                fileioThreadCtrl.setThreadMessage("Copy was failed, be cause can not renamed. Rename from="+fromUrl+" to="+toUrl);
-            }
-        }
-        sendLogMsg("I",fromUrl+" was copied to "+toUrl+", "+ifa.fileBytes + " bytes transfered in " +
-                (System.currentTimeMillis()-b_time)+" mili seconds at " + calTransferRate(ifa.fileBytes,(System.currentTimeMillis()-b_time)));
-        return result;
-    }
-
     private boolean copyFileLocalToSdcard_API21(File iLf, String fromUrl, String toUrl, String title_header) throws IOException, JcifsException {
         long b_time=System.currentTimeMillis();
 	    SafFile oLf = mGp.safMgr.createSdcardFile(toUrl);
@@ -1291,7 +1261,6 @@ public class FileIo extends Thread {
         String fn=toUrl.substring(toUrl.lastIndexOf("/")+1);
         File tmp_file=new File(mGp.safMgr.getSdcardRootPath()+"/"+APP_SPECIFIC_DIRECTORY+"/files/"+fn);
         OutputStream bos = new FileOutputStream(tmp_file);
-//        BufferedOutputStream bos=new BufferedOutputStream(os, 1024*1024*8);
         FileAttributes ifa= getInputFileAttribute(fromUrl);
 
         result=copyFile(ifa.is, bos, tmp_file, ifa.fileBytes, title_header, ifa.fileName, fromUrl, toUrl);
@@ -1299,10 +1268,7 @@ public class FileIo extends Thread {
             boolean slm=tmp_file.setLastModified(ifa.lastMod);
             SafFile temp_saf = mGp.safMgr.createSdcardItem(tmp_file.getPath(), false);
             SafFile dest_saf = mGp.safMgr.createSdcardItem(toUrl, false);
-//            if (dest_saf.exists()) dest_saf.delete();
             dest_saf.deleteIfExists();
-//            tmp_file.delete();
-//            result=temp_saf.moveTo(dest_saf);
             result=temp_saf.moveToCC(dest_saf);
             if (result) {
                 scanMediaStoreLibraryFile(toUrl);
@@ -1577,7 +1543,8 @@ public class FileIo extends Thread {
     }
 
     private String calTransferRate(long tb, long tt) {
-	    if (tt==0L) return "????";
+	    long et=tt;
+	    if (et==0L) et=1;
 	    String tfs = null;
 	    BigDecimal bd_tr;
 	    if (tb>(1024)) {//KB
@@ -1585,7 +1552,7 @@ public class FileIo extends Thread {
 		    BigDecimal dfs2 = new BigDecimal(1024*1.000);
 		    BigDecimal dfs3 = new BigDecimal("0.000000");
 		    dfs3=dfs1.divide(dfs2);
-			BigDecimal dft1 = new BigDecimal(tt*1.000);
+			BigDecimal dft1 = new BigDecimal(et*1.000);
 		    BigDecimal dft2 = new BigDecimal(1000.000);
 		    BigDecimal dft3 = new BigDecimal("0.000000");
 		    dft3=dft1.divide(dft2);
@@ -1596,7 +1563,7 @@ public class FileIo extends Thread {
 		    BigDecimal dfs2 = new BigDecimal(1024*1.000);
 		    BigDecimal dfs3 = new BigDecimal("0.000000");
 		    dfs3=dfs1.divide(dfs2);
-			BigDecimal dft1 = new BigDecimal(tt*1.000);
+			BigDecimal dft1 = new BigDecimal(et*1.000);
 		    BigDecimal dft2 = new BigDecimal(1000.000);
 		    BigDecimal dft3 = new BigDecimal("0.000000");
 		    dft3=dft1.divide(dft2);

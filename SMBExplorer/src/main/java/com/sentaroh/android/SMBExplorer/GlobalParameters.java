@@ -203,7 +203,7 @@ public class GlobalParameters extends CommonGlobalParms{
 
         loadSettingsParm(c);
 
-        safMgr =new SafManager(c, settingDebugLevel>0);
+        safMgr =new SafManager(true, c, settingDebugLevel>0);
 
 		setLogParms(this);
 	};
