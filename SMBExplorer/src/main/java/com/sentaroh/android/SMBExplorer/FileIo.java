@@ -80,7 +80,6 @@ public class FileIo extends Thread {
 	private ArrayList<FileIoLinkParm> fileioLinkParm;
 	private int file_op_cd;
 	private Context mContext=null;
-	private MediaScannerConnection mediaScanner=null ;
 	private Handler uiHandler = new Handler() ;
 	private GlobalParameters mGp=null;
 	private final static String mAppPackageName="com.sentaroh.android.SMBExplorer";
@@ -100,33 +99,7 @@ public class FileIo extends Thread {
 
 		mLogUtil=new LogUtil(mContext, "FILEIO", mGp);
 
-		mediaScanner = new MediaScannerConnection(mContext, new MediaScannerConnectionClient() {
-			@Override
-			public void onMediaScannerConnected() {
-				sendDebugLogMsg(1,"I","MediaScanner connected.");
-			};
-			@Override
-			public void onScanCompleted(String path, Uri uri) {
-				sendDebugLogMsg(2,"I","MediaScanner scan completed. fileName="+path+", Uri="+uri);
-			};
-		});
-		mediaScanner.connect();
 	};
-	
-    private void waitMediaScanner(boolean ds) {
-    	boolean time_out=false;
-    	int timeout_val=0;
-		while(true) {
-			if (mediaScanner.isConnected()==ds) break;
-			SystemClock.sleep(10);
-			timeout_val++;
-			if (timeout_val>=501) {
-				time_out=true;
-				break;
-			}
-		}
-    	if (time_out) sendLogMsg("E","MediaScannerConnection timeout occured.");
-    };
 	
     private long taskBeginTime=0;
     
@@ -147,8 +120,6 @@ public class FileIo extends Thread {
 		try {
 			taskBeginTime=System.currentTimeMillis();
 			
-			waitMediaScanner(true);
-			
 			boolean fileioTaskResultOk=false;
 			for (int i=0;i<fileioLinkParm.size();i++) {
 				fileioTaskResultOk=fileOperation(fileioLinkParm.get(i));
@@ -168,8 +139,6 @@ public class FileIo extends Thread {
 				sendLogMsg("W","Task was cancelled.");
 			}
 			fileioThreadCtrl.setDisabled();
-			mediaScanner.disconnect();
-			waitMediaScanner(false);
 
 			uiHandler.post(new Runnable() {// UI thread
 				@Override
@@ -506,7 +475,7 @@ public class FileIo extends Thread {
         if (!fileioThreadCtrl.isEnabled()) return false;
         result=lf.delete();
         if (result) {
-            mediaScanner.scanFile(lf.getPath(), null);
+            MediaScannerConnection.scanFile(mContext, new String[]{lf.getPath()}, null, null);
             sendMsgToProgDlg(lf.getName()+" was deleted");
             sendLogMsg("I","File was Deleted. File="+lf.getPath());
         } else {
@@ -1105,8 +1074,8 @@ public class FileIo extends Thread {
                     result=true;
                 } else {
                     t_lf.delete();
-                    sendLogMsg("I","Copy was failed, be cause can not renamed. Rename from="+fromUrl+" to="+toUrl);
-                    fileioThreadCtrl.setThreadMessage("Copy was failed, be cause can not renamed. Rename from="+fromUrl+" to="+toUrl);
+                    sendLogMsg("I","Copy was failed, can not be renamed. Rename from="+fromUrl+" to="+toUrl);
+                    fileioThreadCtrl.setThreadMessage("Copy was failed, can not be renamed. Rename from="+fromUrl+" to="+toUrl);
                 }
             } else {
                 t_lf.delete();
@@ -1162,31 +1131,31 @@ public class FileIo extends Thread {
     }
 
     private FileAttributes getOutputFileAttribute(String to_path) throws FileNotFoundException {
-        FileAttributes ifa=new FileAttributes();
+        FileAttributes ofa=new FileAttributes();
 
-        ifa.filePath=to_path;
+        ofa.filePath=to_path;
         if (to_path.startsWith(mGp.safMgr.getUsbRootPath())) {
             SafFile sf=mGp.safMgr.createUsbFile(to_path);
-            ifa.is=mGp.context.getContentResolver().openInputStream(sf.getUri());
-            ifa.fileBytes =sf.length();
-            ifa.fileName =sf.getName();
-            ifa.lastMod =sf.lastModified();
-            ifa.safFile =sf;
+            ofa.is=mGp.context.getContentResolver().openInputStream(sf.getUri());
+            ofa.fileBytes =sf.length();
+            ofa.fileName =sf.getName();
+            ofa.lastMod =sf.lastModified();
+            ofa.safFile =sf;
         } else if (to_path.startsWith(mGp.safMgr.getSdcardRootPath())) {
             SafFile sf=mGp.safMgr.createSdcardFile(to_path);
-            ifa.is=mGp.context.getContentResolver().openInputStream(sf.getUri());
-            ifa.fileBytes =sf.length();
-            ifa.fileName =sf.getName();
-            ifa.lastMod =sf.lastModified();
-            ifa.safFile =sf;
+            ofa.is=mGp.context.getContentResolver().openInputStream(sf.getUri());
+            ofa.fileBytes =sf.length();
+            ofa.fileName =sf.getName();
+            ofa.lastMod =sf.lastModified();
+            ofa.safFile =sf;
         } else {
             File iLf=new File(to_path);
-            ifa.is=new FileInputStream(to_path);
-            ifa.fileBytes =iLf.length();
-            ifa.fileName =iLf.getName();
-            ifa.lastMod =iLf.lastModified();
+            ofa.is=new FileInputStream(to_path);
+            ofa.fileBytes =iLf.length();
+            ofa.fileName =iLf.getName();
+            ofa.lastMod =iLf.lastModified();
         }
-        return ifa;
+        return ofa;
     }
 
     private boolean copyFile(InputStream bis, OutputStream bos, Object file_delete, long fileBytes,
@@ -1274,8 +1243,8 @@ public class FileIo extends Thread {
                 scanMediaStoreLibraryFile(toUrl);
             } else {
                 temp_saf.delete();
-                sendLogMsg("I","Copy was failed, be cause can not renamed. Rename from="+fromUrl+" to="+toUrl);
-                fileioThreadCtrl.setThreadMessage("Copy was failed, be cause can not renamed. Rename from="+fromUrl+" to="+toUrl);
+                sendLogMsg("I","Copy was failed, can not be moved. Move from="+fromUrl+" to="+toUrl);
+                fileioThreadCtrl.setThreadMessage("Copy was failed, can not be moved. Move from="+fromUrl+" to="+toUrl);
             }
         }
         sendLogMsg("I",fromUrl+" was copied to "+toUrl+", "+ifa.fileBytes + " bytes transfered in " +
@@ -1363,8 +1332,8 @@ public class FileIo extends Thread {
                             (System.currentTimeMillis()-b_time)+" mili seconds at " + calTransferRate(hf.length(),(System.currentTimeMillis()-b_time)));
                 } else {
                     t_lf.delete();
-                    sendLogMsg("I","Copy was failed, be cause can not renamed. Rename from="+fromUrl+" to="+toUrl);
-                    fileioThreadCtrl.setThreadMessage("Copy was failed, be cause can not renamed. Rename from="+fromUrl+" to="+toUrl);
+                    sendLogMsg("I","Copy was failed, can not be renamed. Rename from="+fromUrl+" to="+toUrl);
+                    fileioThreadCtrl.setThreadMessage("Copy was failed, can not be renamed. Rename from="+fromUrl+" to="+toUrl);
                 }
             } else {
                 t_lf.delete();
@@ -1431,15 +1400,15 @@ public class FileIo extends Thread {
                 result=true;
             } else {
                 t_df.delete();
-                sendLogMsg("I","Copy was failed, be cause can not renamed. Rename from="+fromUrl+" to="+toUrl);
-                fileioThreadCtrl.setThreadMessage("Copy was failed, be cause can not renamed. Rename from="+fromUrl+" to="+toUrl);
+                sendLogMsg("I","Copy was failed, can not be moved. Move from="+fromUrl+" to="+toUrl);
+                fileioThreadCtrl.setThreadMessage("Copy was failed, can not be moved. Move from="+fromUrl+" to="+toUrl);
             }
         }
         return result;
     };
 
     private void scanMediaStoreLibraryFile(String fp) {
-        mediaScanner.scanFile(fp, null);
+        MediaScannerConnection.scanFile(mContext, new String[]{fp}, null, null);
 	};
 
     private String isMediaFile(String fp) {

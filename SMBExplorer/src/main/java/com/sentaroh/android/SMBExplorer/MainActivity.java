@@ -177,6 +177,10 @@ public class MainActivity extends AppCompatActivity {
 //        Log.v("","taget="+ StringUtil.convDateTimeTo_YearMonthDayHourMinSecMili(target));
 //        Log.v("","master="+ StringUtil.convDateTimeTo_YearMonthDayHourMinSecMili(master));
 
+//        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+//        intent.addCategory(Intent.CATEGORY_OPENABLE);
+//        intent.setType("*/*");
+//        startActivityForResult(intent, 1000);
     }
 
 	@Override
