@@ -45,6 +45,8 @@ import com.sentaroh.jcifs.JcifsAuth;
 import com.sentaroh.jcifs.JcifsException;
 import com.sentaroh.jcifs.JcifsFile;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -126,7 +128,7 @@ public class FileIo extends Thread {
 				if (!fileioTaskResultOk) 
 					break;
 			}
-			sendLogMsg("I","Task was ended. fileioTaskResultOk="+fileioTaskResultOk+ ", fileioThreadCtrl:"+fileioThreadCtrl.toString());
+			sendLogMsg("I","Task was ended. fileioTaskResultOk=",fileioTaskResultOk+ ", fileioThreadCtrl:",fileioThreadCtrl.toString());
 			sendLogMsg("I","Task elapsed time="+(System.currentTimeMillis()-taskBeginTime));
 			if (fileioTaskResultOk) {
 				fileioThreadCtrl.setThreadResultSuccess();
@@ -157,9 +159,9 @@ public class FileIo extends Thread {
     }
 
 	private boolean fileOperation(FileIoLinkParm fiop) {
-		sendDebugLogMsg(2,"I","FILEIO task invoked."+
-                " fromUrl="+fiop.getFromUrl()+ ", fromName="+fiop.getFromName()+", fromBaseUrl="+fiop.getFromBaseUrl()+", fromSmbLebel="+fiop.getFromSmbLevel()+", fromUser="+fiop.getFromUser()+
-                ", toUrl="+fiop.getToUrl()+ ", toName="+fiop.getToName()+ ", toBaseUrl="+fiop.getToBaseUrl()+", toSmbLebel="+fiop.getToSmbLevel()+", toUser="+fiop.getToUser());
+		sendDebugLogMsg(2,"I","FILEIO task invoked.",
+                " fromUrl=",fiop.getFromUrl(), ", fromName=",fiop.getFromName(),", fromBaseUrl=",fiop.getFromBaseUrl(),", fromSmbLebel=",fiop.getFromSmbLevel(),", fromUser=",fiop.getFromUser(),
+                ", toUrl=",fiop.getToUrl(), ", toName=",fiop.getToName(), ", toBaseUrl=",fiop.getToBaseUrl(),", toSmbLebel=",fiop.getToSmbLevel(),", toUser=",fiop.getToUser());
 
 		boolean result=false;
         JcifsAuth smb_auth_from =null, smb_auth_to =null;
@@ -255,11 +257,11 @@ public class FileIo extends Thread {
         }
 	}
 
-	private void sendLogMsg(final String log_cat, final String log_msg) {
+	private void sendLogMsg(final String log_cat, final String ...log_msg) {
         mLogUtil.addLogMsg(log_cat, log_msg);
 	}
 
-	private void sendDebugLogMsg(int lvl, final String log_cat, final String log_msg) {
+	private void sendDebugLogMsg(int lvl, final String log_cat, final String ...log_msg) {
 
 		if (mGp.settingDebugLevel>0) {
             mLogUtil.addDebugMsg(lvl, log_cat, log_msg);
@@ -272,7 +274,7 @@ public class FileIo extends Thread {
     	
     	if (!fileioThreadCtrl.isEnabled()) return false;
     	
-    	sendDebugLogMsg(1,"I","Create local dir item="+newUrl);
+    	sendDebugLogMsg(1,"I","Create local dir item=",newUrl);
     	
     	try {
     		result=true;
@@ -291,14 +293,14 @@ public class FileIo extends Thread {
                 result=csf==null?false:true;
             } else result=lf.mkdir();
     		if (!result) {
-    			sendLogMsg("E","Create error msg="+saf_msg);
+    			sendLogMsg("E","Create error msg=",saf_msg);
     			fileioThreadCtrl.setThreadMessage("Create error msg="+saf_msg);
     		} else {
-    			sendLogMsg("I",newUrl+" was created");
+    			sendLogMsg("I",newUrl," was created");
     		}
 		} catch (Exception e) {
 			e.printStackTrace();
-			sendLogMsg("E","Create error:"+e.toString());
+			sendLogMsg("E","Create error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Create error:"+e.toString());
 			result=false;
 			return false;
@@ -312,7 +314,7 @@ public class FileIo extends Thread {
     	
     	if (!fileioThreadCtrl.isEnabled()) return false;
     	
-    	sendDebugLogMsg(1,"I","Create remote dir item="+newUrl);
+    	sendDebugLogMsg(1,"I","Create remote dir item=",newUrl);
     	
     	try {
     		result=true;
@@ -321,10 +323,10 @@ public class FileIo extends Thread {
     		if (sf.exists()) return false;
     		
     		sf.mkdir();
-    		sendLogMsg("I",newUrl+" was created");
+    		sendLogMsg("I",newUrl," was created");
 		} catch (Exception e) {
 			e.printStackTrace();
-			sendLogMsg("E","Create error:"+e.toString());
+			sendLogMsg("E","Create error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Create error:"+e.toString());
 			result=false;
 			return false;
@@ -338,7 +340,7 @@ public class FileIo extends Thread {
     	
     	if (!fileioThreadCtrl.isEnabled()) return false;
     	
-    	sendDebugLogMsg(1,"I","Rename remote item="+oldUrl);
+    	sendDebugLogMsg(1,"I","Rename remote item=",oldUrl);
     	
     	try {
     		result=true;
@@ -346,10 +348,10 @@ public class FileIo extends Thread {
     		sfd = new JcifsFile( newUrl,smb_auth );
     		
     		sf.renameTo(sfd);
-    		sendLogMsg("I",oldUrl+" was renamed to "+newUrl);
+    		sendLogMsg("I",oldUrl," was renamed to ",newUrl);
 		} catch (Exception e) {
 			e.printStackTrace();
-			sendLogMsg("E","Rename error:"+e.toString());
+			sendLogMsg("E","Rename error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Rename error:"+e.toString());
 			result=false;
 			return false;
@@ -363,16 +365,16 @@ public class FileIo extends Thread {
     	
     	if (!fileioThreadCtrl.isEnabled()) return false;
     	
-    	sendDebugLogMsg(1,"I","Rename local item="+oldUrl);
+    	sendDebugLogMsg(1,"I","Rename local item=",oldUrl);
 
         if (newUrl.startsWith(mGp.safMgr.getUsbRootPath())) {
             SafFile document=mGp.safMgr.createUsbFile(oldUrl);
             String[] new_name_array=newUrl.split("/");
             result=document.renameTo(new_name_array[new_name_array.length-1]);
             if (result) {
-                sendLogMsg("I",oldUrl+" was renamed to "+newUrl);
+                sendLogMsg("I",oldUrl," was renamed to ",newUrl);
             } else {
-                sendLogMsg("I","Rename was failed, from="+oldUrl+" to="+newUrl+"\n"+document.getLastErrorMessage());
+                sendLogMsg("I","Rename was failed, from=",oldUrl," to=",newUrl,"\n",document.getLastErrorMessage());
                 fileioThreadCtrl.setThreadMessage("Rename was failed, from="+oldUrl+" to="+newUrl+"\n"+document.getLastErrorMessage());
             }
         } else if (Build.VERSION.SDK_INT>=21 && newUrl.startsWith(mGp.safMgr.getSdcardRootPath())) {
@@ -384,9 +386,9 @@ public class FileIo extends Thread {
             String[] new_name_array=newUrl.split("/");
             result=document.renameTo(new_name_array[new_name_array.length-1]);
             if (result) {
-                sendLogMsg("I",oldUrl+" was renamed to "+newUrl);
+                sendLogMsg("I",oldUrl," was renamed to ",newUrl);
             } else {
-                sendLogMsg("I","Rename was failed, from="+oldUrl+" to="+newUrl);
+                sendLogMsg("I","Rename was failed, from=",oldUrl," to=",newUrl);
                 fileioThreadCtrl.setThreadMessage("Rename was failed, from="+oldUrl+" to="+newUrl);
             }
         } else {
@@ -396,14 +398,14 @@ public class FileIo extends Thread {
         		else sfd = new File( newUrl );
     			if (sf.renameTo(sfd)) {
     				result=true;
-    				sendLogMsg("I",oldUrl+" was renamed to "+newUrl);
+    				sendLogMsg("I",oldUrl," was renamed to ",newUrl);
     			} else {
-    				sendLogMsg("I","Rename was failed, from="+oldUrl+" to="+newUrl);
+    				sendLogMsg("I","Rename was failed, from=",oldUrl," to=",newUrl);
     				fileioThreadCtrl.setThreadMessage("Rename was failed, from="+oldUrl+" to="+newUrl);
     			}
     		} catch (Exception e) {
     			e.printStackTrace();
-    			sendLogMsg("E","Rename error:"+e.toString());
+    			sendLogMsg("E","Rename error:",e.toString());
     			fileioThreadCtrl.setThreadMessage("Rename error:"+e.toString());
     			result=false;
     			return false;
@@ -419,7 +421,7 @@ public class FileIo extends Thread {
     	if (!fileioThreadCtrl.isEnabled()) return false;
     	
     	//url="/sdcard/NEW";
-    	sendDebugLogMsg(1,"I","Delete local file entered, File="+url);
+    	sendDebugLogMsg(1,"I","Delete local file entered, File=",url);
 
     	if (url.startsWith(mGp.safMgr.getUsbRootPath())) {
             SafFile usf = mGp.safMgr.findUsbItem(url);
@@ -450,9 +452,9 @@ public class FileIo extends Thread {
         result=lf.delete();
 	    if (result) {
     	    sendMsgToProgDlg(lf.getName()+" was deleted");
-    	    sendLogMsg("I","File was Deleted. File="+prefix+lf.getPath());
+    	    sendLogMsg("I","File was Deleted. File=",prefix,lf.getPath());
 	    } else {
-    	    sendLogMsg("I","Delete was failed, File="+prefix+lf.getPath());
+    	    sendLogMsg("I","Delete was failed, File=",prefix,lf.getPath());
     	    fileioThreadCtrl.setThreadMessage("Delete was failed, File="+prefix+"/"+lf.getPath());
 	    }
 	    return result;
@@ -477,9 +479,9 @@ public class FileIo extends Thread {
         if (result) {
             MediaScannerConnection.scanFile(mContext, new String[]{lf.getPath()}, null, null);
             sendMsgToProgDlg(lf.getName()+" was deleted");
-            sendLogMsg("I","File was Deleted. File="+lf.getPath());
+            sendLogMsg("I","File was Deleted. File=",lf.getPath());
         } else {
-            sendLogMsg("I","Delete was failed, File="+lf.getPath());
+            sendLogMsg("I","Delete was failed, File=",lf.getPath());
             fileioThreadCtrl.setThreadMessage("Delete was failed, File="+lf.getPath());
         }
         return result;
@@ -492,7 +494,7 @@ public class FileIo extends Thread {
     	
     	if (!fileioThreadCtrl.isEnabled()) return false;
     	
-    	sendDebugLogMsg(1,"I","Delete remote file entered, File="+url);
+    	sendDebugLogMsg(1,"I","Delete remote file entered, File=",url);
     	
     	try {
     		result=true;
@@ -500,13 +502,13 @@ public class FileIo extends Thread {
 			result=deleteRemoteFile(sf);
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
-			sendLogMsg("E","Remote file delete error:"+e.toString());
+			sendLogMsg("E","Remote file delete error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Remote file delete error:"+e.toString());
 			result=false;
 			return false;
 		} catch (JcifsException e) {
             e.printStackTrace();
-            sendLogMsg("E","Remote file delete error:"+e.toString());
+            sendLogMsg("E","Remote file delete error:",e.toString());
             fileioThreadCtrl.setThreadMessage("Remote file delete error:"+e.toString());
             result=false;
             return false;
@@ -532,10 +534,10 @@ public class FileIo extends Thread {
 	        if (!fileioThreadCtrl.isEnabled()) return false;
 		    rf.delete();
 		    sendMsgToProgDlg(rf.getName().replace("/", "")+" was deleted");
-		    sendLogMsg("I","File was Deleted. File="+rf.getPath());
+		    sendLogMsg("I","File was Deleted. File=",rf.getPath());
 		} catch (JcifsException e) {
 			e.printStackTrace();
-			sendLogMsg("E","Remote file delete error:"+e.toString());
+			sendLogMsg("E","Remote file delete error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Remote file delete error:"+e.toString());
 			return false;
 		}
@@ -551,7 +553,7 @@ public class FileIo extends Thread {
         
         if (!fileioThreadCtrl.isEnabled()) return false;
         
-        sendDebugLogMsg(1,"I","Copy Local to Local from="+fromUrl+", to="+toUrl);
+        sendDebugLogMsg(1,"I","Copy Local to Local from=",fromUrl,", to=",toUrl);
                 
 		try {
 		    boolean isDirectory=false;
@@ -586,15 +588,15 @@ public class FileIo extends Thread {
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
-			sendLogMsg("E","Copy from="+fromUrl+", to="+toUrl);
-			sendLogMsg("E","Copy error:"+e.toString());
+			sendLogMsg("E","Copy from=",fromUrl,", to=",toUrl);
+			sendLogMsg("E","Copy error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Copy error:"+e.toString());
 			result=false;
 			return false;
 		} catch (JcifsException e) {
             e.printStackTrace();
-            sendLogMsg("E","Copy from="+fromUrl+", to="+toUrl);
-            sendLogMsg("E","Copy error:"+e.toString());
+            sendLogMsg("E","Copy from=",fromUrl,", to=",toUrl);
+            sendLogMsg("E","Copy error:",e.toString());
             fileioThreadCtrl.setThreadMessage("Copy error:"+e.toString());
             result=false;
             return false;
@@ -622,7 +624,7 @@ public class FileIo extends Thread {
         
         if (!fileioThreadCtrl.isEnabled()) return false;
         
-        sendDebugLogMsg(1,"I","copy Remote to Remote from item="+fromUrl+", to item="+toUrl);
+        sendDebugLogMsg(1,"I","copy Remote to Remote from item=",fromUrl,", to item=",toUrl);
                 
 		String tmp_toUrl="";
 		
@@ -658,14 +660,14 @@ public class FileIo extends Thread {
 
 				} else {
 					result=false;
-					sendLogMsg("E","EA founded, copy canceled. path="+fromUrl);
+					sendLogMsg("E","EA founded, copy canceled. path=",fromUrl);
 					fileioThreadCtrl.setThreadMessage("Copy error:"+"EA founded, copy canceled");
 				}
 			}
 		} catch (JcifsException e) {
 			e.printStackTrace();
-			sendLogMsg("E","Copy from="+fromUrl+", to="+toUrl);
-			sendLogMsg("E","Copy error:"+e.toString());
+			sendLogMsg("E","Copy from=",fromUrl,", to=",toUrl);
+			sendLogMsg("E","Copy error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Copy error:"+e.toString());
 			result=false;
 			if (!tmp_toUrl.equals("")) {
@@ -677,8 +679,8 @@ public class FileIo extends Thread {
 			return false;
 		} catch (IOException e) {
 			e.printStackTrace();
-			sendLogMsg("E","Copy from="+fromUrl+", to="+toUrl);
-			sendLogMsg("E","Copy error:"+e.toString());
+			sendLogMsg("E","Copy from=",fromUrl,", to=",toUrl);
+			sendLogMsg("E","Copy error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Copy error:"+e.toString());
 			result=false;
 			return false;
@@ -693,7 +695,7 @@ public class FileIo extends Thread {
         
         if (!fileioThreadCtrl.isEnabled()) return false;
         
-        sendDebugLogMsg(1,"I","Copy Remote to Local from item="+fromUrl+", to item="+toUrl);
+        sendDebugLogMsg(1,"I","Copy Remote to Local from item=",fromUrl,", to item=",toUrl);
                 
 		try {
 			hf = new JcifsFile(fromUrl ,smb_auth);
@@ -714,21 +716,21 @@ public class FileIo extends Thread {
 					result=copyFileRemoteToLocal(hf, lf,toUrl, fromUrl,"Copying");
 				} else {
 					result=false;
-					sendLogMsg("E","EA founded, copy canceled. path="+fromUrl);
+					sendLogMsg("E","EA founded, copy canceled. path=",fromUrl);
 					fileioThreadCtrl.setThreadMessage("Copy error:"+"EA founded, copy canceled");
 				}
 			}
 		} catch (JcifsException e) {
 			e.printStackTrace();
-			sendLogMsg("E","Copy from="+fromUrl+", to="+toUrl);
-			sendLogMsg("E","Copy error:"+e.toString());
+			sendLogMsg("E","Copy from=",fromUrl,", to=",toUrl);
+			sendLogMsg("E","Copy error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Copy error:"+e.toString());
 			result=false;
 			return false;
 		} catch (IOException e) {
 			e.printStackTrace();
-			sendLogMsg("E","Copy from="+fromUrl+", to="+toUrl);
-			sendLogMsg("E","Copy error:"+e.toString());
+			sendLogMsg("E","Copy from=",fromUrl,", to=",toUrl);
+			sendLogMsg("E","Copy error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Copy error:"+e.toString());
 			result=false;
 			return false;
@@ -744,7 +746,7 @@ public class FileIo extends Thread {
         
         if (!fileioThreadCtrl.isEnabled()) return false;
         
-        sendDebugLogMsg(1,"I","Copy Local to Remote from item="+fromUrl+", to item="+toUrl);
+        sendDebugLogMsg(1,"I","Copy Local to Remote from item=",fromUrl,", to item=",toUrl);
 
 		String tmp_toUrl="";
 
@@ -791,8 +793,8 @@ public class FileIo extends Thread {
 			}
 		} catch (JcifsException e) {
 			e.printStackTrace();
-			sendLogMsg("E","Copy from="+fromUrl+", to="+toUrl);
-			sendLogMsg("E","Copy error:"+e.toString());
+			sendLogMsg("E","Copy from=",fromUrl,", to=",toUrl);
+			sendLogMsg("E","Copy error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Copy error:"+e.toString());
 			result=false;
 			if (!tmp_toUrl.equals("")) {
@@ -804,8 +806,8 @@ public class FileIo extends Thread {
 			return false;
 		} catch (IOException e) {
 			e.printStackTrace();
-			sendLogMsg("E","Copy from="+fromUrl+", to="+toUrl);
-			sendDebugLogMsg(1,"E","Copy error:"+e.toString());
+			sendLogMsg("E","Copy from=",fromUrl,", to=",toUrl);
+			sendDebugLogMsg(1,"E","Copy error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Copy error:"+e.toString());
 			result=false;
 			return false;
@@ -819,7 +821,7 @@ public class FileIo extends Thread {
         
         if (!fileioThreadCtrl.isEnabled()) return false;
         
-        sendDebugLogMsg(1,"I","Move Local to Local from item="+fromUrl+",to item="+toUrl);
+        sendDebugLogMsg(1,"I","Move Local to Local from item=",fromUrl,",to item=",toUrl);
 
         boolean isDirectory=false;
         SafFile from_saf=null;
@@ -843,7 +845,7 @@ public class FileIo extends Thread {
                }
                 makeLocalDirsByFilePath(toUrl+"/");
                 from_saf.delete();
-                sendLogMsg("I",fromUrl+" was moved.");
+                sendLogMsg("I",fromUrl," was moved.");
             } else {
                 String[] children = iLf.list();
                 for (String element : children) {
@@ -858,7 +860,7 @@ public class FileIo extends Thread {
                 } else {
                     iLf.delete();
                 }
-                sendLogMsg("I",fromUrl+" was moved.");
+                sendLogMsg("I",fromUrl," was moved.");
             }
 
 		} else { // file rename
@@ -877,7 +879,7 @@ public class FileIo extends Thread {
                     if (to_saf.exists()) to_saf.delete();
                     from_saf.moveTo(to_saf);
                     sendMsgToProgDlg(from_saf.getName() + " was moved.");
-                    sendLogMsg("I", fromUrl + " was moved.");
+                    sendLogMsg("I", fromUrl , " was moved.");
                     result = true;
                 } else if (Build.VERSION.SDK_INT>=24 && isSameMountPoint(fromUrl,toUrl) && fromUrl.startsWith(mGp.safMgr.getUsbRootPath())) {
                     from_saf = mGp.safMgr.findUsbItem(fromUrl);
@@ -885,7 +887,7 @@ public class FileIo extends Thread {
                     if (to_saf.exists()) to_saf.delete();
                     from_saf.moveTo(to_saf);
                     sendMsgToProgDlg(from_saf.getName() + " was moved.");
-                    sendLogMsg("I", fromUrl + " was moved.");
+                    sendLogMsg("I", fromUrl , " was moved.");
                     result = true;
                 } else {
                     try {
@@ -895,13 +897,13 @@ public class FileIo extends Thread {
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
-                        sendLogMsg("E","Copy error:"+e.toString());
+                        sendLogMsg("E","Copy error:",e.toString());
                         fileioThreadCtrl.setThreadMessage("Copy error:"+e.toString());
                         result=false;
                         return false;
                     } catch (JcifsException e) {
                         e.printStackTrace();
-                        sendLogMsg("E","Copy error:"+e.toString());
+                        sendLogMsg("E","Copy error:",e.toString());
                         fileioThreadCtrl.setThreadMessage("Copy error:"+e.toString());
                         result=false;
                         return false;
@@ -909,8 +911,8 @@ public class FileIo extends Thread {
                 }
 			}
 			scanMediaStoreLibraryFile(toUrl);
-			if (result) sendLogMsg("I",fromUrl+" was moved to "+toUrl);
-			else sendLogMsg("I","Move was failed. fromUrl="+ fromUrl+", toUrl="+toUrl);
+			if (result) sendLogMsg("I",fromUrl," was moved to ",toUrl);
+			else sendLogMsg("I","Move was failed. fromUrl=", fromUrl,", toUrl=",toUrl);
 		}
 		return result;
     }
@@ -920,7 +922,7 @@ public class FileIo extends Thread {
     	if (f_fp.startsWith(mGp.internalRootDirectory) && t_fp.startsWith(mGp.internalRootDirectory)) result=true;
     	else if (f_fp.startsWith(mGp.safMgr.getSdcardRootPath()) && t_fp.startsWith(mGp.safMgr.getSdcardRootPath())) result=true;
         else if (f_fp.startsWith(mGp.safMgr.getUsbRootPath()) && t_fp.startsWith(mGp.safMgr.getUsbRootPath())) result=true;
-    	sendDebugLogMsg(1,"I","isSameMountPoint result="+result+", f_fp="+f_fp+", t_fp="+t_fp);
+    	sendDebugLogMsg(1,"I","isSameMountPoint result="+result,", f_fp=",f_fp,", t_fp=",t_fp);
     	return result;
     }
     
@@ -930,7 +932,7 @@ public class FileIo extends Thread {
         
         if (!fileioThreadCtrl.isEnabled()) return false;
         
-        sendDebugLogMsg(1,"I","Move Remote to Remote from item="+fromUrl+", to item="+toUrl);
+        sendDebugLogMsg(1,"I","Move Remote to Remote from item=",fromUrl,", to item=",toUrl);
                 
 		try {
 			ihf = new JcifsFile(fromUrl ,smb_auth_from);
@@ -947,7 +949,7 @@ public class FileIo extends Thread {
 	            }
 				makeRemoteDirsByFilePath(smb_auth_to, toUrl+"/");
 				ihf.delete();
-				sendLogMsg("I",fromUrl+" was deleted.");
+				sendLogMsg("I",fromUrl," was deleted.");
 			} else { // file move
 				if (!fileioThreadCtrl.isEnabled()) return false;
 				makeRemoteDirsByFilePath(smb_auth_to, toUrl);
@@ -956,18 +958,18 @@ public class FileIo extends Thread {
                 if (ohf.exists()) ohf.delete();
                 ihf.renameTo(ohf);
                 result=ohf.exists();
-				if (result) sendLogMsg("I",fromUrl+" was moved to "+toUrl);
-				else sendLogMsg("I","Move was failed. fromUrl="+ fromUrl+", toUrl="+toUrl);
+				if (result) sendLogMsg("I",fromUrl," was moved to ",toUrl);
+				else sendLogMsg("I","Move was failed. fromUrl=", fromUrl,", toUrl=",toUrl);
 			}
 		} catch (JcifsException e) {
 			e.printStackTrace();
-			sendLogMsg("E","Move error:"+e.toString());
+			sendLogMsg("E","Move error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Move error:"+e.toString());
 			result=false;
 			return false;
 		} catch (IOException e) {
 			e.printStackTrace();
-			sendLogMsg("E","Move error:"+e.toString());
+			sendLogMsg("E","Move error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Move error:"+e.toString());
 			result=false;
 			return false;
@@ -982,7 +984,7 @@ public class FileIo extends Thread {
         
         if (!fileioThreadCtrl.isEnabled()) return false;
         
-        sendDebugLogMsg(1,"I","Download Remote file, from item="+fromUrl+", to item="+toUrl);
+        sendDebugLogMsg(1,"I","Download Remote file, from item=",fromUrl,", to item=",toUrl);
                 
 		try {
 			hf = new JcifsFile(fromUrl ,smb_auth);
@@ -1008,19 +1010,19 @@ public class FileIo extends Thread {
 					}
 				} else {
 					result=false;
-					sendLogMsg("E","EA founded, copy canceled. path="+fromUrl);
+					sendLogMsg("E","EA founded, copy canceled. path=",fromUrl);
 					fileioThreadCtrl.setThreadMessage("Download error:"+"EA founded, copy canceled");
 				}
 			}
 		} catch (JcifsException e) {
 			e.printStackTrace();
-			sendLogMsg("E","Download error:"+e.toString());
+			sendLogMsg("E","Download error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Download error:"+e.toString());
 			result=false;
 			return false;
 		} catch (IOException e) {
 			e.printStackTrace();
-			sendLogMsg("E","Download error:"+e.toString());
+			sendLogMsg("E","Download error:",e.toString());
 			fileioThreadCtrl.setThreadMessage("Download error:"+e.toString());
 			result=false;
 			return false;
@@ -1074,16 +1076,16 @@ public class FileIo extends Thread {
                     result=true;
                 } else {
                     t_lf.delete();
-                    sendLogMsg("I","Copy was failed, can not be renamed. Rename from="+fromUrl+" to="+toUrl);
+                    sendLogMsg("I","Copy was failed, can not be renamed. Rename from=",fromUrl," to=",toUrl);
                     fileioThreadCtrl.setThreadMessage("Copy was failed, can not be renamed. Rename from="+fromUrl+" to="+toUrl);
                 }
             } else {
                 t_lf.delete();
-                sendLogMsg("I","Copy was failed, Target file not deleted, Target file="+toUrl);
+                sendLogMsg("I","Copy was failed, Target file not deleted, Target file=",toUrl);
                 fileioThreadCtrl.setThreadMessage("Copy was failed, Target file not deleted, Target file="+toUrl);
             }
         }
-        sendLogMsg("I",fromUrl+" was copied to "+toUrl+", "+ifa.fileBytes + " bytes transfered in " +
+        sendLogMsg("I",fromUrl," was copied to ",toUrl,", "+ifa.fileBytes , " bytes transfered in " ,
                 (System.currentTimeMillis()-b_time)+" mili seconds at " + calTransferRate(ifa.fileBytes,(System.currentTimeMillis()-b_time)));
         return result;
 	}
@@ -1198,7 +1200,7 @@ public class FileIo extends Thread {
 //        if (copy_success) {
 //            scanMediaStoreLibraryFile(toUrl);
 //        }
-        sendLogMsg("I",fromUrl+" was copied to "+toUrl+", "+ifa.fileBytes + " bytes transfered in " +
+        sendLogMsg("I",fromUrl," was copied to ",toUrl,", "+ifa.fileBytes + " bytes transfered in " +
                 (System.currentTimeMillis()-b_time)+" mili seconds at " + calTransferRate(ifa.fileBytes,(System.currentTimeMillis()-b_time)));
 
         return copy_success;
@@ -1218,7 +1220,7 @@ public class FileIo extends Thread {
         if (copy_success) {
             scanMediaStoreLibraryFile(toUrl);
         }
-        sendLogMsg("I",fromUrl+" was copied to "+toUrl+", "+ifa.fileBytes + " bytes transfered in " +
+        sendLogMsg("I",fromUrl," was copied to ",toUrl+", "+ifa.fileBytes + " bytes transfered in " +
                 (System.currentTimeMillis()-b_time)+" mili seconds at " + calTransferRate(ifa.fileBytes,(System.currentTimeMillis()-b_time)));
 
 	    return copy_success;
@@ -1243,11 +1245,11 @@ public class FileIo extends Thread {
                 scanMediaStoreLibraryFile(toUrl);
             } else {
                 temp_saf.delete();
-                sendLogMsg("I","Copy was failed, can not be moved. Move from="+fromUrl+" to="+toUrl);
-                fileioThreadCtrl.setThreadMessage("Copy was failed, can not be moved. Move from="+fromUrl+" to="+toUrl);
+                sendLogMsg("I","Copy was failed because can not be moved. Move from=",fromUrl," to=",toUrl);
+                fileioThreadCtrl.setThreadMessage("Copy was failed because can not be moved. Move from="+fromUrl+" to="+toUrl);
             }
         }
-        sendLogMsg("I",fromUrl+" was copied to "+toUrl+", "+ifa.fileBytes + " bytes transfered in " +
+        sendLogMsg("I",fromUrl," was copied to ",toUrl,", "+ifa.fileBytes + " bytes transfered in " +
                 (System.currentTimeMillis()-b_time)+" mili seconds at " + calTransferRate(ifa.fileBytes,(System.currentTimeMillis()-b_time)));
         return result;
     }
@@ -1262,10 +1264,10 @@ public class FileIo extends Thread {
             try {
                 ohf.setLastModified(ihf.getLastModified());
             } catch (JcifsException e) {
-                sendLogMsg("I", "JcifsFile#setLastModified() was failed, reason=" + e.getMessage());
+                sendLogMsg("I", "JcifsFile#setLastModified() was failed, reason=" , e.getMessage());
             }
         }
-        sendLogMsg("I",fromUrl+" was copied to "+toUrl+", "+ihf.length() + " bytes transfered in " +
+        sendLogMsg("I",fromUrl," was copied to ",toUrl,", "+ihf.length() + " bytes transfered in " +
                 (System.currentTimeMillis()-b_time)+" mili seconds at " + calTransferRate(ihf.length(),(System.currentTimeMillis()-b_time)));
 		return result;
 	}
@@ -1284,10 +1286,10 @@ public class FileIo extends Thread {
             try {
                 tf.setLastModified(ifa.lastMod);
             } catch(JcifsException e) {
-                sendLogMsg("I","JcifsFile#setLastModified() was failed, reason="+e.getMessage());
+                sendLogMsg("I","JcifsFile#setLastModified() was failed, reason=",e.getMessage());
             }
         }
-        sendLogMsg("I",fromUrl+" was copied to "+toUrl+", "+ifa.fileBytes + " bytes transfered in " +
+        sendLogMsg("I",fromUrl," was copied to ",toUrl,", "+ifa.fileBytes + " bytes transfered in " +
                 (System.currentTimeMillis()-b_time)+" mili seconds at " + calTransferRate(ifa.fileBytes,(System.currentTimeMillis()-b_time)));
         return result;
 	}

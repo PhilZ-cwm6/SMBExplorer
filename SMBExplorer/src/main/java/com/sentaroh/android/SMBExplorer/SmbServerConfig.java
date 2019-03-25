@@ -19,7 +19,7 @@ class SmbServerConfig implements Serializable, Cloneable, Comparable<SmbServerCo
 	private String profileAddr="";
 	private String profilePort="";
 	private String profileShare="";
-    private String profileSmbLevel=String.valueOf(JcifsAuth.JCIFS_FILE_SMB211);
+    private String profileSmbLevel=String.valueOf(JcifsAuth.JCIFS_FILE_SMB212);
 	private boolean profileIsChecked=false;
 
     @Override
