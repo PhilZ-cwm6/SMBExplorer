@@ -330,7 +330,7 @@ public class RetrieveFileList extends Thread  {
                     }
                 } else {
                     getFLCtrl.setThreadResultCancelled();
-                    sendDebugLogMsg(-1,"W","Cancelled by main task.");
+                    sendDebugLogMsg(1,"W","Cancelled by main task.");
                     break;
                 }
             }
@@ -353,8 +353,8 @@ public class RetrieveFileList extends Thread  {
     private void checkItemExists(String url) {
 		for (int i=0;i<dir_list.size();i++) {
 			try {		
-				JcifsFile remoteFile = 
-						new JcifsFile(url+"/"+dir_list.get(i),ntlmPaswordAuth);
+				JcifsFile remoteFile = new JcifsFile(dir_list.get(i),ntlmPaswordAuth);
+                sendDebugLogMsg(1,"I","checkItemExists fp="+remoteFile.getPath());
 				if (!remoteFile.exists()) dir_list.set(i,"");
 			} catch (JcifsException e) {
 				e.printStackTrace();

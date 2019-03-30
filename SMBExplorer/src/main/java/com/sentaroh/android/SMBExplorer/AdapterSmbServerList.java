@@ -87,18 +87,17 @@ public class AdapterSmbServerList extends ArrayAdapter<AdapterSmbServerList.Netw
             holder = (ViewHolder) v.getTag();
         }
         if (o != null) {
-            holder.tv_name.setText(o.server_name);
             holder.tv_addr.setText(o.server_address);
-            if (o.server_name.startsWith("---")) {
-                holder.tv_addr.setVisibility(Button.GONE);
-            } else {
-                holder.tv_addr.setVisibility(Button.VISIBLE);
-            }
-            if (o.server_name.equals("")) holder.tv_name.setEnabled(false);
+//            o.server_name="";
+            String srv_name=o.server_name;
+            if (o.server_name.equals("")) srv_name="name not detected";
+            holder.tv_name.setText(srv_name+"\n"+o.server_smb_supported);
+
+//            if (o.server_name.equals("")) holder.tv_name.setEnabled(false);
             holder.tv_name.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View arg0) {
-                    if (o.server_name.startsWith("---") || !mButtonEnabled) return;
+                    if (o.server_name.equals("") || !mButtonEnabled) return;
                     mNtfyEvent.notifyToListener(true, new String[]{"N", o.server_name});
                 }
             });
@@ -106,7 +105,7 @@ public class AdapterSmbServerList extends ArrayAdapter<AdapterSmbServerList.Netw
             holder.tv_addr.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View arg0) {
-                    if (o.server_name.startsWith("---") || !mButtonEnabled) return;
+                    if (!mButtonEnabled) return;
                     mNtfyEvent.notifyToListener(true, new String[]{"A", o.server_address});
                 }
             });
@@ -121,6 +120,7 @@ public class AdapterSmbServerList extends ArrayAdapter<AdapterSmbServerList.Netw
     static class NetworkScanListItem {
         public String server_name = "";
         public String server_address = "";
+        public String server_smb_supported = "";
     }
 }
 

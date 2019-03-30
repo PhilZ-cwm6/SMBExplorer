@@ -20,12 +20,18 @@ import com.sentaroh.android.Utilities.Dialog.DialogBackKeyListener;
 import com.sentaroh.android.Utilities.NotifyEvent;
 import com.sentaroh.android.Utilities.ThreadCtrl;
 import com.sentaroh.jcifs.JcifsAuth;
+import com.sentaroh.jcifs.JcifsException;
+import com.sentaroh.jcifs.JcifsFile;
 import com.sentaroh.jcifs.JcifsUtil;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.NetworkInterface;
 import java.net.Socket;
 import java.net.SocketException;
@@ -40,6 +46,8 @@ public class ScanSmbServer {
     private Context mContext = null;
     private GlobalParameters mGp=null;
     private CommonUtilities mUtil=null;
+
+    private static final Logger log = LoggerFactory.getLogger(ScanSmbServer.class);
 
     private int mSmbLevel = JcifsAuth.JCIFS_FILE_SMB211;
     public ScanSmbServer(MainActivity a, GlobalParameters gp, String smb_level) {
@@ -345,6 +353,10 @@ public class ScanSmbServer {
                 }
                 if (isIpAddrSmbHost(addr, scan_port)) {
                     final String srv_name = JcifsUtil.getSmbHostNameByAddress(mSmbLevel, addr);
+                    final String srv_smb1 = canAccessSmbServer(1, addr, "SMB1", "SMB1", "SMB1");
+                    final String srv_smb2 = canAccessSmbServer(4, addr, "SMB202", "SMB210", "SMB2");
+                    final String srv_smb3 = canAccessSmbServer(4, addr, "SMB300", "SMB300", "SMB3");
+//                    log.info("name="+srv_name+", smb1="+srv_smb1+", smb2="+srv_smb2+", smb3="+srv_smb3);
                     handler.post(new Runnable() {// UI thread
                         @Override
                         public void run() {
@@ -353,11 +365,11 @@ public class ScanSmbServer {
                                 AdapterSmbServerList.NetworkScanListItem li = new AdapterSmbServerList.NetworkScanListItem();
                                 li.server_address = addr;
                                 li.server_name = srv_name;
+                                li.server_smb_supported = (srv_smb1+" "+srv_smb2+" "+srv_smb3).replaceAll("  ","");
                                 ipAddressList.add(li);
                                 Collections.sort(ipAddressList, new Comparator<AdapterSmbServerList.NetworkScanListItem>() {
                                     @Override
-                                    public int compare(AdapterSmbServerList.NetworkScanListItem lhs,
-                                                       AdapterSmbServerList.NetworkScanListItem rhs) {
+                                    public int compare(AdapterSmbServerList.NetworkScanListItem lhs, AdapterSmbServerList.NetworkScanListItem rhs) {
                                         String r_o4 = rhs.server_address.substring(rhs.server_address.lastIndexOf(".") + 1);
                                         String r_key = String.format("%3s", Integer.parseInt(r_o4)).replace(" ", "0");
                                         String l_o4 = lhs.server_address.substring(lhs.server_address.lastIndexOf(".") + 1);
@@ -399,6 +411,37 @@ public class ScanSmbServer {
         th.setName(addr);
         th.start();
     }
+
+    final private String canAccessSmbServer(int smb_level, String address, String min_ver, String max_ver, String return_label) {
+        JcifsAuth auth=null;
+        if (smb_level==JcifsAuth.JCIFS_FILE_SMB1) auth=new JcifsAuth(JcifsAuth.JCIFS_FILE_SMB1, "", "", "");
+        else auth=new JcifsAuth(smb_level, "", "", "", true, min_ver, max_ver);
+        try {
+            JcifsFile sf = new JcifsFile("smb://"+address, auth);
+            sf.connect();
+            mUtil.addDebugMsg(1,"I","canAccessSmbServer level="+smb_level+", address="+address+", min="+min_ver+", max="+max_ver+", result="+return_label);
+            try {
+                sf.close();
+            } catch(Exception e) {
+                mUtil.addDebugMsg(1,"I","close() failed. Error=",e.getMessage());
+            }
+            return return_label;
+        } catch (JcifsException e) {
+            String result="";
+            if (e.getNtStatus()==0xc0000001) result="";                 //Unsuccessfull
+            else if (e.getNtStatus()==0xc0000022) result=return_label;  //Access denied
+            else if (e.getNtStatus()==0xc000015b) result=return_label;  //Invalid login type
+            else if (e.getNtStatus()==0xc000006d) result=return_label;  //Unknown account or invalid password
+            mUtil.addDebugMsg(1,"I","canAccessSmbServer level="+smb_level+", address="+address+", min="+min_ver+", max="+max_ver+
+                    ", result="+result+String.format(", status=0x%8h",e.getNtStatus()));
+            return result;
+        } catch (MalformedURLException e) {
+//            log.info("Test logon failed." , e);
+        }
+
+        return "";
+    }
+
 
     private boolean isIpAddrSmbHost(String address, String scan_port) {
         boolean smbhost = false;

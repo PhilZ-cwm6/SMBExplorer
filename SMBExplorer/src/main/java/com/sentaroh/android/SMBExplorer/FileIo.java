@@ -767,14 +767,16 @@ public class FileIo extends Thread {
                     SafFile[] children = from_saf.listFiles();
                     for (SafFile element : children) {
                         if (!fileioThreadCtrl.isEnabled()) return false;
-                        if (!copyLocalToRemote(smb_auth, fromUrl+"/"+element, toUrl+"/"+element+"/" ))
+                        String sep=element.isDirectory()?"/":"";
+                        if (!copyLocalToRemote(smb_auth, fromUrl+"/"+element, toUrl+"/"+element+sep))
                             return false;
                     }
                 } else {
-                    String[] children = ilf.list();
-                    for (String element : children) {
+                    File[] children = ilf.listFiles();
+                    for (File element : children) {
                         if (!fileioThreadCtrl.isEnabled()) return false;
-                        if (!copyLocalToRemote(smb_auth, fromUrl+"/"+element, toUrl+"/"+element+"/" ))
+                        String sep=element.isDirectory()?"/":"";
+                        if (!copyLocalToRemote(smb_auth, fromUrl+"/"+element.getName(), toUrl+"/"+element.getName()+sep ))
                             return false;
                     }
                 }
@@ -876,7 +878,7 @@ public class FileIo extends Thread {
                 if (Build.VERSION.SDK_INT>=24 && isSameMountPoint(fromUrl,toUrl) && fromUrl.startsWith(mGp.safMgr.getSdcardRootPath())) {
                     from_saf = mGp.safMgr.findSdcardItem(fromUrl);
                     SafFile to_saf = mGp.safMgr.createSdcardItem(toUrl, true);
-                    if (to_saf.exists()) to_saf.delete();
+                    to_saf.deleteIfExists();
                     from_saf.moveTo(to_saf);
                     sendMsgToProgDlg(from_saf.getName() + " was moved.");
                     sendLogMsg("I", fromUrl , " was moved.");
@@ -884,7 +886,7 @@ public class FileIo extends Thread {
                 } else if (Build.VERSION.SDK_INT>=24 && isSameMountPoint(fromUrl,toUrl) && fromUrl.startsWith(mGp.safMgr.getUsbRootPath())) {
                     from_saf = mGp.safMgr.findUsbItem(fromUrl);
                     SafFile to_saf = mGp.safMgr.createUsbItem(toUrl, true);
-                    if (to_saf.exists()) to_saf.delete();
+                    to_saf.deleteIfExists();
                     from_saf.moveTo(to_saf);
                     sendMsgToProgDlg(from_saf.getName() + " was moved.");
                     sendLogMsg("I", fromUrl , " was moved.");
@@ -1240,7 +1242,7 @@ public class FileIo extends Thread {
             SafFile temp_saf = mGp.safMgr.createSdcardItem(tmp_file.getPath(), false);
             SafFile dest_saf = mGp.safMgr.createSdcardItem(toUrl, false);
             dest_saf.deleteIfExists();
-            result=temp_saf.moveToCC(dest_saf);
+            result=temp_saf.moveTo(dest_saf);
             if (result) {
                 scanMediaStoreLibraryFile(toUrl);
             } else {

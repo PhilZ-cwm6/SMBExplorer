@@ -224,7 +224,6 @@ public class SmbServerUtil {
                     Document main_document = dbuilder.newDocument();
                     Element config_tag = main_document.createElement(CONFIG_TAG_CONFIG);
                     config_tag.setAttribute(CONFIG_TAG_CONFIG_VERSION, "1.0.2");
-//                    root.appendChild(document.createTextNode("1.0.0"));
 
                     for(SmbServerConfig item:gp.smbConfigList) {
                         Element server_tag = main_document.createElement(CONFIG_TAG_SERVER);

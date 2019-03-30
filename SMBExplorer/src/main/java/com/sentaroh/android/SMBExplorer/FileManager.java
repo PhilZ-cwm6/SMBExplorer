@@ -2198,8 +2198,10 @@ public class FileManager {
             pasteCreateIoParm(fla,to_dir,fl_name,fl_exists,fl_conf_req, lmp);
         } else {
             final ArrayList<String> d_list=new ArrayList<String>();
-            for (int i = 0; i < pasteFromList.size(); i++)
-                d_list.add(to_dir+pasteFromList.get(i).getName());
+            for (int i = 0; i < pasteFromList.size(); i++) {
+//                mUtil.addDebugMsg(1,"I","to_dir="+to_dir+", name="+pasteFromList.get(i).getName());
+                d_list.add(to_dir+"/"+pasteFromList.get(i).getName());
+            }
             NotifyEvent ntfy=new NotifyEvent(mContext);
             // set commonDialog response
             ntfy.setListener(new NotifyEvent.NotifyEventListener() {

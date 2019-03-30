@@ -80,21 +80,29 @@
 		        
 		    </LinearLayout>
 
-            <Button
-                android:id="@+id/smb_server_item_edit_dlg_scan_server"
-                android:layout_width="match_parent"
+            <LinearLayout
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:text="Scan netwoork" />
-
-            <Spinner
-                android:id="@+id/smb_server_item_edit_dlg_smb_protocol"
-                style="?android:attr/spinnerStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:layout_marginLeft="5dp"
-                android:minHeight="36dp"
-                android:paddingLeft="0dp" />
+                android:layout_marginLeft="1dp"
+                android:orientation="vertical" >
+                <Button
+                    android:id="@+id/smb_server_item_edit_dlg_scan_server"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="0dp"
+                    android:paddingLeft="0dp"
+                    android:text="Scan netwoork" />
+                <Spinner
+                    android:id="@+id/smb_server_item_edit_dlg_smb_protocol"
+                    style="?android:attr/spinnerStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginLeft="4dp"
+                    android:layout_marginRight="4dp"
+                    android:minHeight="36dp"
+                    android:paddingLeft="0dp" />
+            </LinearLayout>
 
             <LinearLayout
 		        android:layout_width="fill_parent"
