@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="msgs_scan_network_smb_use_port_number">Use port number</string>
+    <string name="msgs_scan_network_smb_use_account_password">Use Account/Password</string>
     <string name="msgs_scan_network_smb_title">Scan SMB server</string>
 
     <string name="msgs_scan_network_smb_scan_btn">Scan</string>

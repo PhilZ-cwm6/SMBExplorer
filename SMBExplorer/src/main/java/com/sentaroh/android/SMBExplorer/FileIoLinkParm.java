@@ -30,31 +30,31 @@ public class FileIoLinkParm {
     private String toUrl="", toDomain="", toSmbLevel="3", toUser="", toPass="", toBaseUrl="", toFileName="";
 
 
-	public void setFromUrl(String url) {fromUrl=url;}
+	public void setFromDirectory(String url) {fromUrl=url;}
     public void setFromName(String name) {fromName=name;}
-    public void setFromBaseUrl(String url) {fromBaseUrl=url;}
+    public void setFromBaseDirectory(String url) {fromBaseUrl=url;}
     public void setFromDomain(String domain) {fromDomain=domain;}
     public void setFromSmbLevel(String smb_level) {fromSmbLevel=smb_level;}
     public void setFromUser(String url) {fromUser=url;}
     public void setFromPass(String url) {fromPass=url;}
-    public String getFromUrl() {return fromUrl;}
+    public String getFromDirectory() {return fromUrl;}
     public String getFromName() {return fromName;}
-    public String getFromBaseUrl() {return fromBaseUrl;}
+    public String getFromBaseDirectory() {return fromBaseUrl;}
     public String getFromDomain() {return fromDomain;}
     public String getFromSmbLevel() {return fromSmbLevel;}
     public String getFromUser() {return fromUser;}
     public String getFromPass() {return fromPass;}
 
-    public void setToUrl(String url) {toUrl=url;}
+    public void setToDirectory(String url) {toUrl=url;}
     public void setToName(String name) {toFileName=name;}
-    public void setToBaseUrl(String url) {toBaseUrl=url;}
+    public void setToBaseDirectory(String url) {toBaseUrl=url;}
     public void setToDomain(String domain) {toDomain=domain;}
     public void setToSmbLevel(String smb_level) {toSmbLevel=smb_level;}
     public void setToUser(String url) {toUser=url;}
     public void setToPass(String url) {toPass=url;}
-    public String getToUrl() {return toUrl;}
+    public String getToDirectory() {return toUrl;}
     public String getToName() {return toFileName;}
-    public String getToBaseUrl() {return toBaseUrl;}
+    public String getToBaseDirectory() {return toBaseUrl;}
     public String getToDomain() {return toDomain;}
     public String getToSmbLevel() {return toSmbLevel;}
     public String getToUser() {return toUser;}

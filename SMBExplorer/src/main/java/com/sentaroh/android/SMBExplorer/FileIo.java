@@ -25,8 +25,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 import android.content.Context;
 import android.media.MediaScannerConnection;
-import android.media.MediaScannerConnection.MediaScannerConnectionClient;
-import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.WifiLock;
 import android.os.Build;
@@ -34,7 +32,6 @@ import android.os.Handler;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.RemoteException;
-import android.os.SystemClock;
 import android.webkit.MimeTypeMap;
 
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
@@ -45,8 +42,6 @@ import com.sentaroh.jcifs.JcifsAuth;
 import com.sentaroh.jcifs.JcifsException;
 import com.sentaroh.jcifs.JcifsFile;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -160,75 +155,75 @@ public class FileIo extends Thread {
 
 	private boolean fileOperation(FileIoLinkParm fiop) {
 		sendDebugLogMsg(2,"I","FILEIO task invoked.",
-                " fromUrl=",fiop.getFromUrl(), ", fromName=",fiop.getFromName(),", fromBaseUrl=",fiop.getFromBaseUrl(),", fromSmbLebel=",fiop.getFromSmbLevel(),", fromUser=",fiop.getFromUser(),
-                ", toUrl=",fiop.getToUrl(), ", toName=",fiop.getToName(), ", toBaseUrl=",fiop.getToBaseUrl(),", toSmbLebel=",fiop.getToSmbLevel(),", toUser=",fiop.getToUser());
+                " fromUrl=",fiop.getFromDirectory(), ", fromName=",fiop.getFromName(),", fromBaseUrl=",fiop.getFromBaseDirectory(),", fromSmbLebel=",fiop.getFromSmbLevel(),", fromUser=",fiop.getFromUser(),
+                ", toUrl=",fiop.getToDirectory(), ", toName=",fiop.getToName(), ", toBaseUrl=",fiop.getToBaseDirectory(),", toSmbLebel=",fiop.getToSmbLevel(),", toUser=",fiop.getToUser());
 
 		boolean result=false;
         JcifsAuth smb_auth_from =null, smb_auth_to =null;
 		switch (file_op_cd) {
 			case FILEIO_PARM_LOCAL_CREATE:
-				result=createLocalDir(fiop.getToUrl()+"/"+fiop.getToName());
+				result=createLocalDir(fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_REMOTE_CREATE:
                 smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
-                result=createRemoteDir(smb_auth_to, fiop.getToUrl()+"/"+fiop.getToName());
+                result=createRemoteDir(smb_auth_to, fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_LOCAL_RENAME:
-				result=renameLocalItem(fiop.getFromUrl()+"/"+fiop.getFromName(),  fiop.getToUrl()+"/"+fiop.getToName());
+				result=renameLocalItem(fiop.getFromDirectory()+"/"+fiop.getFromName(),  fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_REMOTE_RENAME:
                 smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
-				result=renameRemoteItem(smb_auth_to, fiop.getFromUrl()+"/"+fiop.getFromName()+"/", fiop.getToUrl()+"/"+fiop.getToName()+"/");
+				result=renameRemoteItem(smb_auth_to, fiop.getFromDirectory()+"/"+fiop.getFromName()+"/", fiop.getToDirectory()+"/"+fiop.getToName()+"/");
 				break;
 			case FILEIO_PARM_LOCAL_DELETE:
-				result=deleteLocalItem(fiop.getToUrl()+"/"+fiop.getToName());
+				result=deleteLocalItem(fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_REMOTE_DELETE:
                 smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
-				result=deleteRemoteItem(smb_auth_to, fiop.getToUrl()+"/"+fiop.getToName()+"/");
+				result=deleteRemoteItem(smb_auth_to, fiop.getToDirectory()+"/"+fiop.getToName()+"/");
 				break;
 			case FILEIO_PARM_COPY_REMOTE_TO_LOCAL:
                 smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass());
-				result=copyRemoteToLocal(smb_auth_from, fiop.getFromUrl()+"/"+fiop.getFromName(), fiop.getToUrl()+"/"+fiop.getToName());
+				result=copyRemoteToLocal(smb_auth_from, fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_COPY_REMOTE_TO_REMOTE:
                 smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass());
                 smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
-				result=copyRemoteToRemote(smb_auth_from, smb_auth_to, fiop.getFromUrl()+"/"+fiop.getFromName(), fiop.getToUrl()+"/"+fiop.getToName());
+				result=copyRemoteToRemote(smb_auth_from, smb_auth_to, fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_COPY_LOCAL_TO_LOCAL:
-				result=copyLocalToLocal(fiop.getFromUrl()+"/"+fiop.getFromName(), fiop.getToUrl()+"/"+fiop.getToName());
+				result=copyLocalToLocal(fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_COPY_LOCAL_TO_REMOTE:
                 smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
-				result=copyLocalToRemote(smb_auth_to, fiop.getFromUrl()+"/"+fiop.getFromName(), fiop.getToUrl()+"/"+fiop.getToName());
+				result=copyLocalToRemote(smb_auth_to, fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_MOVE_REMOTE_TO_LOCAL:
                 smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass());
-				result=copyRemoteToLocal(smb_auth_from, fiop.getFromUrl()+"/"+fiop.getFromName(), fiop.getToUrl()+"/"+fiop.getToName());
-				if (result) result=deleteRemoteItem(smb_auth_from, fiop.getFromUrl()+"/"+fiop.getToName()+"/");
+				result=copyRemoteToLocal(smb_auth_from, fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
+				if (result) result=deleteRemoteItem(smb_auth_from, fiop.getFromDirectory()+"/"+fiop.getToName()+"/");
 				break;
 			case FILEIO_PARM_MOVE_REMOTE_TO_REMOTE:
                 smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass());
                 smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
-				if (fiop.getFromBaseUrl().equals(fiop.getToBaseUrl())) {
-					result= moveRemoteToRemoteByRename(smb_auth_from, smb_auth_to, fiop.getFromUrl()+"/"+fiop.getFromName()+"/", fiop.getToUrl()+"/"+fiop.getToName());
+				if (fiop.getFromBaseDirectory().equals(fiop.getToBaseDirectory())) {
+					result= moveRemoteToRemoteByRename(smb_auth_from, smb_auth_to, fiop.getFromDirectory()+"/"+fiop.getFromName()+"/", fiop.getToDirectory()+"/"+fiop.getToName());
 				} else {
-					result=copyRemoteToRemote(smb_auth_from, smb_auth_to, fiop.getFromUrl()+"/"+fiop.getFromName()+"/", fiop.getToUrl()+"/"+fiop.getToName());
-					if (result) result=deleteRemoteItem(smb_auth_from, fiop.getFromUrl()+"/"+fiop.getFromName()+"/");
+					result=copyRemoteToRemote(smb_auth_from, smb_auth_to, fiop.getFromDirectory()+"/"+fiop.getFromName()+"/", fiop.getToDirectory()+"/"+fiop.getToName());
+					if (result) result=deleteRemoteItem(smb_auth_from, fiop.getFromDirectory()+"/"+fiop.getFromName()+"/");
 				}
 				break;
 			case FILEIO_PARM_MOVE_LOCAL_TO_LOCAL:
-				result=moveLocalToLocal(fiop.getFromUrl()+"/"+fiop.getFromName(), fiop.getToUrl()+"/"+fiop.getToName());
+				result=moveLocalToLocal(fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_MOVE_LOCAL_TO_REMOTE:
                 smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
-				result=copyLocalToRemote(smb_auth_to, fiop.getFromUrl()+"/"+fiop.getFromName(), fiop.getToUrl()+"/"+fiop.getToName());
-				if (result) result=deleteLocalItem(fiop.getFromUrl()+"/"+fiop.getFromName());
+				result=copyLocalToRemote(smb_auth_to, fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
+				if (result) result=deleteLocalItem(fiop.getFromDirectory()+"/"+fiop.getFromName());
 				break;
 			case FILEIO_PARM_DOWLOAD_REMOTE_FILE:
                 smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass());
-                result=downloadRemoteFile(smb_auth_from, fiop.getFromUrl()+"/"+fiop.getFromName(), fiop.getToUrl()+"/"+fiop.getToName());
+                result=downloadRemoteFile(smb_auth_from, fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 	
 			default:

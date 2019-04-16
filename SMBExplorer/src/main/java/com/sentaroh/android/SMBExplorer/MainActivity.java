@@ -867,7 +867,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void negativeResponse(Context context, Object[] objects) {}
                         });
-                        mGp.commonDlg.showCommonDialog(true, "W", "USBのルートディレクトリーが選択されていません、選択しなおしますか?","",ntfy);
+                        mGp.commonDlg.showCommonDialog(true, "W", "USBのルートディレクトリーが選択されていません、選択しなおしますか?", data.getData().getPath(), ntfy);
                     }
                 } else {
                     if (mGp.safMgr.isRootTreeUri(data.getData())) {
@@ -884,7 +884,8 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void negativeResponse(Context context, Object[] objects) {}
                         });
-                        mGp.commonDlg.showCommonDialog(true, "W", "SDCARDのルートディレクトリーが選択されていません、選択しなおしますか?","",ntfy);
+                        mGp.commonDlg.showCommonDialog(true, "W", "SDCARDのルートディレクトリーが選択されていません、選択しなおしますか?",
+                                data.getData().getPath(), ntfy);
                     }
                 }
 	        }

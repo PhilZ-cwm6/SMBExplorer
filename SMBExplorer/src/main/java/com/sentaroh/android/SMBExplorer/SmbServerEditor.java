@@ -208,7 +208,7 @@ public class SmbServerEditor {
                 });
                 String smb_level=""+(sp_smb_level.getSelectedItemPosition()+1);
                 ScanSmbServer ss=new ScanSmbServer(mActivity, mGp, smb_level);
-                ss.scanSmbServerDlg(ntfy, et_smb_port.getText().toString(), false);
+                ss.scanSmbServerDlg(ntfy, "", et_smb_user.getText().toString(), et_smb_pass.getText().toString(), et_smb_port.getText().toString(), false);
             }
         });
 

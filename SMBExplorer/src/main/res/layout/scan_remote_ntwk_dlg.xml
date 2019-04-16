@@ -145,6 +145,35 @@
 
                 </LinearLayout>
 
+                <CheckBox
+                    android:id="@+id/scan_remote_ntwk_ctv_use_account_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:text="@string/msgs_scan_network_smb_use_account_password"
+                    android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" >
+
+                    <EditText
+                        android:id="@+id/scan_remote_ntwk_account_name"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Account name"/>
+
+                    <EditText
+                        android:id="@+id/scan_remote_ntwk_account_password"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Password"
+                        android:inputType="textPassword" />
+
+                </LinearLayout>
+
             </LinearLayout>
         </LinearLayout>
 

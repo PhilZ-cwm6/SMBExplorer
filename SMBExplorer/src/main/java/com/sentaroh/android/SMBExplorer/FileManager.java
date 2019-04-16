@@ -1586,10 +1586,10 @@ public class FileManager {
         SmbServerConfig smb_item=mGp.smbConfigList.get(mGp.remoteFileListDirSpinner.getSelectedItemPosition());
         mGp.fileioLinkParm.clear();
         FileIoLinkParm fio=new FileIoLinkParm();
-        fio.setFromUrl(item.getPath());
+        fio.setFromDirectory(item.getPath());
         fio.setFromName(item.getName());
         fio.setFromSmbLevel(smb_item.getSmbLevel());
-        fio.setToUrl(mGp.internalRootDirectory+"/Download");
+        fio.setToDirectory(mGp.internalRootDirectory+"/Download");
         fio.setToName(item.getName());
         fio.setFromUser(mGp.currentSmbServerConfig.getSmbUser());
         fio.setFromPass(mGp.currentSmbServerConfig.getSmbPass());
@@ -1826,7 +1826,7 @@ public class FileManager {
                     if (mGp.currentTabName.equals(SMBEXPLORER_TAB_LOCAL)) {
 //                        mGp.fileioLinkParm=buildFileioLinkParm(mGp.fileioLinkParm, base_dir,"",newName.getText().toString(),"", mGp.smbUser,mGp.smbPass,true);
                         FileIoLinkParm fio=new FileIoLinkParm();
-                        fio.setToUrl(base_dir);
+                        fio.setToDirectory(base_dir);
                         fio.setToName(newName.getText().toString());
                         mGp.fileioLinkParm.add(fio);
                         cmd=FILEIO_PARM_LOCAL_CREATE;
@@ -1834,7 +1834,7 @@ public class FileManager {
                         cmd=FILEIO_PARM_REMOTE_CREATE;
 //                        mGp.fileioLinkParm=buildFileioLinkParm(mGp.fileioLinkParm, base_dir,"",newName.getText().toString(),"", mGp.smbUser,mGp.smbPass,true);
                         FileIoLinkParm fio=new FileIoLinkParm();
-                        fio.setToUrl(base_dir);
+                        fio.setToDirectory(base_dir);
                         fio.setToName(newName.getText().toString());
                         fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
                         fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
@@ -1950,20 +1950,20 @@ public class FileManager {
                     int cmd=0;
                     if (mGp.currentTabName.equals(SMBEXPLORER_TAB_LOCAL)) {
                         FileIoLinkParm fio=new FileIoLinkParm();
-                        fio.setFromUrl(from_item.getPath());
+                        fio.setFromDirectory(from_item.getPath());
                         fio.setFromName(from_item.getName());
-                        fio.setToUrl(from_item.getPath());
+                        fio.setToDirectory(from_item.getPath());
                         fio.setToName(newName.getText().toString());
                         mGp.fileioLinkParm.add(fio);
                         cmd=FILEIO_PARM_LOCAL_RENAME;
                     } else {
                         cmd=FILEIO_PARM_REMOTE_RENAME;
                         FileIoLinkParm fio=new FileIoLinkParm();
-                        fio.setFromUrl(from_item.getPath());
+                        fio.setFromDirectory(from_item.getPath());
                         fio.setFromName(from_item.getName());
                         fio.setFromUser(mGp.currentSmbServerConfig.getSmbUser());
                         fio.setFromPass(mGp.currentSmbServerConfig.getSmbPass());
-                        fio.setToUrl(from_item.getPath());
+                        fio.setToDirectory(from_item.getPath());
                         fio.setToName(newName.getText().toString());
                         fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
                         fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
@@ -2010,14 +2010,14 @@ public class FileManager {
                         if (mGp.currentTabName.equals(SMBEXPLORER_TAB_LOCAL)) {
 //                            buildFileioLinkParm(mGp.fileioLinkParm,item.getPath(), "",item.getName(),"","","",true);
                             FileIoLinkParm fio=new FileIoLinkParm();
-                            fio.setToUrl(item.getPath());
+                            fio.setToDirectory(item.getPath());
                             fio.setToName(item.getName());
                             mGp.fileioLinkParm.add(fio);
                         } else {
 //                            buildFileioLinkParm(mGp.fileioLinkParm,item.getPath(),
 //                                    "",item.getName(),"",mGp.smbUser,mGp.smbPass,true);
                             FileIoLinkParm fio=new FileIoLinkParm();
-                            fio.setToUrl(item.getPath());
+                            fio.setToDirectory(item.getPath());
                             fio.setToName(item.getName());
                             fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
                             fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
@@ -2229,27 +2229,27 @@ public class FileManager {
         for (int i=0;i<pasteFromList.size();i++) {
             fi=pasteFromList.get(i);
             FileIoLinkParm fio=new FileIoLinkParm();
-            fio.setFromUrl(fi.getPath());
+            fio.setFromDirectory(fi.getPath());
             fio.setFromName(fi.getName());
-            fio.setToUrl(to_dir);
+            fio.setToDirectory(to_dir);
             fio.setToName(fi.getName());
 
             if (fi.getPath().startsWith("smb://")) {
-                fio.setFromBaseUrl(fi.getBaseUrl());
+                fio.setFromBaseDirectory(fi.getBaseUrl());
                 fio.setFromUser(pasteFromUser);
                 fio.setFromPass(pasteFromPass);
                 fio.setFromSmbLevel(pasteFromSmbLevel);
             } else {
-                fio.setFromBaseUrl(fi.getBaseUrl());
+                fio.setFromBaseDirectory(fi.getBaseUrl());
             }
 
             if (to_dir.startsWith("smb://")) {
-                fio.setToBaseUrl(mGp.remoteBase);
+                fio.setToBaseDirectory(mGp.remoteBase);
                 fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
                 fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
                 fio.setToSmbLevel(mGp.currentSmbServerConfig.getSmbLevel());
             } else {
-                fio.setToBaseUrl(mGp.localBase);
+                fio.setToBaseDirectory(mGp.localBase);
             }
 
             mGp.fileioLinkParm.add(fio);
