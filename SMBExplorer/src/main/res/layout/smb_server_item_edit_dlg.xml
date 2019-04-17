@@ -104,6 +104,28 @@
                     android:paddingLeft="0dp" />
             </LinearLayout>
 
+            <CheckedTextView
+                android:id="@+id/smb_server_item_edit_dlg_smb_ipc_sign_enforce"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:checkMark="?android:attr/listChoiceIndicatorMultiple"
+                android:gravity="center_vertical"
+                android:text="SMB IPC Sign enforcing"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                 />
+
+            <CheckedTextView
+                android:id="@+id/smb_server_item_edit_dlg_smb_use_smb2_negotiation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:checkMark="?android:attr/listChoiceIndicatorMultiple"
+                android:gravity="center_vertical"
+                android:text="SMB Use SMB2 Negotiation"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                />
+
             <LinearLayout
 		        android:layout_width="fill_parent"
 		        android:layout_height="wrap_content"

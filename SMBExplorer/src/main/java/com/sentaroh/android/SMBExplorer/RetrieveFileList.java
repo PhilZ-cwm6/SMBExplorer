@@ -52,13 +52,14 @@ public class RetrieveFileList extends Thread  {
 	
 	private Handler uiHandler=null;
 	
-	private JcifsAuth ntlmPaswordAuth;
+	private JcifsAuth mJcifsAuth=null;
 	
 	private GlobalParameters mGp=null;
 
+    private SmbServerConfig mSmbServerConfig=null;
+
 	private int mSmbLevel =JcifsAuth.JCIFS_FILE_SMB211;
-	public RetrieveFileList(GlobalParameters gp, ThreadCtrl ac, String smb_level, String ru, List<String> d_list,
-			String user, String pass, NotifyEvent ne) {
+	public RetrieveFileList(GlobalParameters gp, ThreadCtrl ac, String ru, List<String> d_list, SmbServerConfig sc, NotifyEvent ne) {
 //		currContext=c;
 		mGp=gp;
 		
@@ -69,12 +70,14 @@ public class RetrieveFileList extends Thread  {
 		uiHandler=new Handler();
 		
 		dir_list=d_list;
+
+        mSmbServerConfig=sc;
 		
 		opCode=OPCD_EXISTS_CHECK; //check item is exists
 
-		if (!user.equals("")) tuser=user;
-		if (!pass.equals("")) tpass=pass;
-        mSmbLevel =Integer.parseInt(smb_level);
+		if (!sc.getSmbUser().equals("")) tuser=sc.getSmbUser();
+		if (!sc.getSmbPass().equals("")) tpass=sc.getSmbPass();
+        mSmbLevel =Integer.parseInt(sc.getSmbLevel());
 	}
 
 	public final static String OPCD_FILE_LIST="FL";
@@ -84,8 +87,7 @@ public class RetrieveFileList extends Thread  {
     private String tuser=null,tpass="";
 
     public RetrieveFileList(GlobalParameters gp,
-			ThreadCtrl ac, String opcd, String smb_level, String ru, ArrayList<FileListItem> fl,
-			String user, String pass, NotifyEvent ne) {
+			ThreadCtrl ac, String opcd, String ru, ArrayList<FileListItem> fl, SmbServerConfig sc, NotifyEvent ne) {
 		mGp=gp;
 		remoteFileList=fl;
 		
@@ -94,12 +96,14 @@ public class RetrieveFileList extends Thread  {
 		getFLCtrl=ac; //new SMBExplorerThreadCtrl();
 		notifyEvent=ne;
 		remoteUrl=ru;
-		
-		opCode=opcd;
-		
-		if (!user.equals("")) tuser=user;
-		if (!pass.equals("")) tpass=pass;
-        mSmbLevel =Integer.parseInt(smb_level);
+
+        mSmbServerConfig=sc;
+
+        opCode=opcd;
+
+        if (!sc.getSmbUser().equals("")) tuser=sc.getSmbUser();
+        if (!sc.getSmbPass().equals("")) tpass=sc.getSmbPass();
+        mSmbLevel =Integer.parseInt(sc.getSmbLevel());
 	}
 	
 	
@@ -112,7 +116,7 @@ public class RetrieveFileList extends Thread  {
 		defaultUEH = Thread.currentThread().getUncaughtExceptionHandler();
         Thread.currentThread().setUncaughtExceptionHandler(unCaughtExceptionHandler);
 
-        ntlmPaswordAuth = new JcifsAuth(mSmbLevel, "", tuser, tpass);
+        mJcifsAuth = new JcifsAuth(mSmbLevel, "", tuser, tpass, mSmbServerConfig.isSmbOptionIpcSigningEnforced(), mSmbServerConfig.isSmbOptionUseSMB2Negotiation());
 
 //        Log.v("","url="+remoteUrl);
 		String host_t1=remoteUrl.replace("smb://","").replaceAll("//", "/");
@@ -202,7 +206,7 @@ public class RetrieveFileList extends Thread  {
 		ArrayList<FileListItem> rem_list=new ArrayList<FileListItem>();
 		sendDebugLogMsg(2,"I","Filelist directory: "+url);
 		try {		
-			JcifsFile remoteFile = new JcifsFile(url,ntlmPaswordAuth);
+			JcifsFile remoteFile = new JcifsFile(url, mJcifsAuth);
 			JcifsFile[] fl = remoteFile.listFiles();
 
 			for (int i=0;i<fl.length;i++){
@@ -219,7 +223,7 @@ public class RetrieveFileList extends Thread  {
 						int dirct=0;
 						try {
 							if (fl[i].isDirectory()) {
-								JcifsFile tdf=new JcifsFile(fl[i].getPath(),ntlmPaswordAuth);
+								JcifsFile tdf=new JcifsFile(fl[i].getPath(), mJcifsAuth);
 								JcifsFile[] tfl=tdf.listFiles();
 								dirct=tfl.length;
 							}
@@ -267,7 +271,7 @@ public class RetrieveFileList extends Thread  {
         ArrayList<FileListItem> rem_list=new ArrayList<FileListItem>();
         sendDebugLogMsg(2,"I","Filelist directory: "+url);
         try {
-            JcifsFile remoteFile = new JcifsFile(url,ntlmPaswordAuth);
+            JcifsFile remoteFile = new JcifsFile(url, mJcifsAuth);
             JcifsFile[] fl = remoteFile.listFiles();
 
             for (int i=0;i<fl.length;i++){
@@ -284,7 +288,7 @@ public class RetrieveFileList extends Thread  {
                         int dirct=0;
                         try {
                             if (fl[i].isDirectory()) {
-                                JcifsFile tdf=new JcifsFile(fl[i].getPath(),ntlmPaswordAuth);
+                                JcifsFile tdf=new JcifsFile(fl[i].getPath(), mJcifsAuth);
                                 JcifsFile[] tfl=tdf.listFiles();
                                 dirct=tfl.length;
                             }
@@ -353,7 +357,7 @@ public class RetrieveFileList extends Thread  {
     private void checkItemExists(String url) {
 		for (int i=0;i<dir_list.size();i++) {
 			try {		
-				JcifsFile remoteFile = new JcifsFile(dir_list.get(i),ntlmPaswordAuth);
+				JcifsFile remoteFile = new JcifsFile(dir_list.get(i), mJcifsAuth);
                 sendDebugLogMsg(1,"I","checkItemExists fp="+remoteFile.getPath());
 				if (!remoteFile.exists()) dir_list.set(i,"");
 			} catch (JcifsException e) {

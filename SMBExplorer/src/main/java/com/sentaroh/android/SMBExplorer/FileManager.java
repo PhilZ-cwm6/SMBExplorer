@@ -1593,6 +1593,9 @@ public class FileManager {
         fio.setToName(item.getName());
         fio.setFromUser(mGp.currentSmbServerConfig.getSmbUser());
         fio.setFromPass(mGp.currentSmbServerConfig.getSmbPass());
+        fio.setFromSmbOptionIpcSignEnforce(mGp.currentSmbServerConfig.isSmbOptionIpcSigningEnforced());
+        fio.setFromSmbOptionUseSMB2Negotiation(mGp.currentSmbServerConfig.isSmbOptionUseSMB2Negotiation());
+
         mGp.fileioLinkParm.add(fio);
         startFileioTask(fla,FILEIO_PARM_DOWLOAD_REMOTE_FILE,mGp.fileioLinkParm, item.getName(),p_ntfy, mGp.internalRootDirectory);
     }
@@ -1836,8 +1839,12 @@ public class FileManager {
                         FileIoLinkParm fio=new FileIoLinkParm();
                         fio.setToDirectory(base_dir);
                         fio.setToName(newName.getText().toString());
+                        fio.setToSmbLevel(mGp.currentSmbServerConfig.getSmbLevel());
                         fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
                         fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
+                        fio.setToSmbOptionIpcSignEnforce(mGp.currentSmbServerConfig.isSmbOptionIpcSigningEnforced());
+                        fio.setToSmbOptionUseSMB2Negotiation(mGp.currentSmbServerConfig.isSmbOptionUseSMB2Negotiation());
+
                         mGp.fileioLinkParm.add(fio);
                     }
                     mUtil.addDebugMsg(1,"I","createItem FILEIO task invoked.");
@@ -2019,8 +2026,12 @@ public class FileManager {
                             FileIoLinkParm fio=new FileIoLinkParm();
                             fio.setToDirectory(item.getPath());
                             fio.setToName(item.getName());
+                            fio.setToSmbLevel(mGp.currentSmbServerConfig.getSmbLevel());
                             fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
                             fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
+                            fio.setToSmbOptionIpcSignEnforce(mGp.currentSmbServerConfig.isSmbOptionIpcSigningEnforced());
+                            fio.setToSmbOptionUseSMB2Negotiation(mGp.currentSmbServerConfig.isSmbOptionUseSMB2Negotiation());
+
                             mGp.fileioLinkParm.add(fio);
                         }
                     }
@@ -2043,6 +2054,7 @@ public class FileManager {
     private ArrayList<FileListItem> pasteFromList=new ArrayList<FileListItem>();
     private String pasteFromUrl="", pasteItemList="", pasteFromBase="";
     private String pasteFromDomain="", pasteFromUser="", pasteFromPass="", pasteFromSmbLevel="";
+    private boolean pasteFromSmbIpc=false, pasteFromSmbSMB2Nego=false;
     private boolean isPasteCopy=false,isPasteEnabled=false, isPasteFromLocal=false;
     private void setCopyFrom(FileListAdapter fla) {
         pasteItemList="";
@@ -2057,6 +2069,8 @@ public class FileManager {
             pasteFromUser=mGp.currentSmbServerConfig.getSmbUser();
             pasteFromPass=mGp.currentSmbServerConfig.getSmbPass();
             pasteFromSmbLevel=mGp.currentSmbServerConfig.getSmbLevel();
+            pasteFromSmbIpc=mGp.currentSmbServerConfig.isSmbOptionIpcSigningEnforced();
+            pasteFromSmbSMB2Nego=mGp.currentSmbServerConfig.isSmbOptionUseSMB2Negotiation();
         }
         //Get selected item names
         isPasteCopy=true;
@@ -2220,7 +2234,7 @@ public class FileManager {
                 @Override
                 public void negativeResponse(Context c,Object[] o) {	}
             });
-            checkRemoteFileExists(mGp.remoteBase, mGp.currentSmbServerConfig.getSmbUser(), mGp.currentSmbServerConfig.getSmbPass(), d_list, ntfy);
+            checkRemoteFileExists(mGp.remoteBase, d_list, mGp.currentSmbServerConfig, ntfy);
         }
     }
 
@@ -2239,6 +2253,8 @@ public class FileManager {
                 fio.setFromUser(pasteFromUser);
                 fio.setFromPass(pasteFromPass);
                 fio.setFromSmbLevel(pasteFromSmbLevel);
+                fio.setFromSmbOptionIpcSignEnforce(pasteFromSmbIpc);
+                fio.setFromSmbOptionUseSMB2Negotiation(pasteFromSmbSMB2Nego);
             } else {
                 fio.setFromBaseDirectory(fi.getBaseUrl());
             }
@@ -2248,6 +2264,8 @@ public class FileManager {
                 fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
                 fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
                 fio.setToSmbLevel(mGp.currentSmbServerConfig.getSmbLevel());
+                fio.setToSmbOptionIpcSignEnforce(mGp.currentSmbServerConfig.isSmbOptionIpcSigningEnforced());
+                fio.setToSmbOptionUseSMB2Negotiation(mGp.currentSmbServerConfig.isSmbOptionUseSMB2Negotiation());
             } else {
                 fio.setToBaseDirectory(mGp.localBase);
             }
@@ -2695,8 +2713,7 @@ public class FileManager {
                         mContext.getString(R.string.msgs_remote_file_list_create_error),(String)o[0]);
             }
         });
-        SmbServerUtil.createSmbServerFileList(mActivity, mGp, opcd,
-                mGp.currentSmbServerConfig.getSmbLevel(), url+"/", mGp.currentSmbServerConfig.getSmbUser(), mGp.currentSmbServerConfig.getSmbPass(),n_event);
+        SmbServerUtil.createSmbServerFileList(mActivity, mGp, opcd, url+"/", mGp.currentSmbServerConfig,n_event);
 
     }
 
@@ -2715,7 +2732,7 @@ public class FileManager {
         return result;
     }
 
-    private void checkRemoteFileExists(String url, String user, String pass, ArrayList<String> d_list, final NotifyEvent n_event) {
+    private void checkRemoteFileExists(String url, ArrayList<String> d_list, SmbServerConfig sc, final NotifyEvent n_event) {
         final ArrayList<FileListItem> remoteFileList=new ArrayList<FileListItem>();
 
         final ThreadCtrl tc = new ThreadCtrl();
@@ -2752,7 +2769,7 @@ public class FileManager {
             }
         });
 
-        Thread th = new RetrieveFileList(mGp, tc, mGp.currentSmbServerConfig.getSmbLevel(), url, d_list,user,pass,ne);
+        Thread th = new RetrieveFileList(mGp, tc, url, d_list, sc, ne);
         th.start();
     }
 

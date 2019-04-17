@@ -20,6 +20,8 @@ class SmbServerConfig implements Serializable, Cloneable, Comparable<SmbServerCo
 	private String profilePort="";
 	private String profileShare="";
     private String profileSmbLevel=String.valueOf(JcifsAuth.JCIFS_FILE_SMB212);
+    private boolean profileSmbOptionIpcSigningEnforced=true;
+    private boolean profileSmbOptionUseSMB2Negotiation=false;
 	private boolean profileIsChecked=false;
 
     @Override
@@ -97,7 +99,13 @@ class SmbServerConfig implements Serializable, Cloneable, Comparable<SmbServerCo
     public String getSmbLevel(){return profileSmbLevel;}
     public void setSmbLevel(String level){profileSmbLevel=level;}
 
-	public boolean isChecked(){return profileIsChecked;}
+    public boolean isSmbOptionIpcSigningEnforced(){return profileSmbOptionIpcSigningEnforced;}
+    public void setSmbOptionIpcSigningEnforced(boolean p){profileSmbOptionIpcSigningEnforced=p;}
+
+    public boolean isSmbOptionUseSMB2Negotiation(){return profileSmbOptionUseSMB2Negotiation;}
+    public void setSmbOptionUseSMB2Negotiation(boolean p){profileSmbOptionUseSMB2Negotiation=p;}
+
+    public boolean isChecked(){return profileIsChecked;}
 	public void setChecked(boolean p){profileIsChecked=p;}
 
 	@Override

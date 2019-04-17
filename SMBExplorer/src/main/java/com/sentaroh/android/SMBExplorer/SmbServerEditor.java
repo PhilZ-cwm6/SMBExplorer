@@ -11,6 +11,7 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckedTextView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -80,6 +81,29 @@ public class SmbServerEditor {
             @Override
             public void onNothingSelected(AdapterView<?> parent) {}
         });
+
+        final CheckedTextView ctv_smb_option_ipc_sign_enforce=(CheckedTextView)mDialog.findViewById(R.id.smb_server_item_edit_dlg_smb_ipc_sign_enforce);
+        ctv_smb_option_ipc_sign_enforce.setChecked(mSmbServerConfigitem.isSmbOptionIpcSigningEnforced());
+        ctv_smb_option_ipc_sign_enforce.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean isChecked = !((CheckedTextView)v).isChecked();
+                ((CheckedTextView)v).setChecked(isChecked);
+                checkValidation(mDialog);
+            }
+        });
+        final CheckedTextView ctv_smb_option_use_smb2_negotiation=(CheckedTextView)mDialog.findViewById(R.id.smb_server_item_edit_dlg_smb_use_smb2_negotiation);
+        ctv_smb_option_use_smb2_negotiation.setChecked(mSmbServerConfigitem.isSmbOptionUseSMB2Negotiation());
+        ctv_smb_option_use_smb2_negotiation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean isChecked = !((CheckedTextView)v).isChecked();
+                ((CheckedTextView)v).setChecked(isChecked);
+                checkValidation(mDialog);
+            }
+        });
+
+
         final EditText et_smb_addr = (EditText) mDialog.findViewById(R.id.smb_server_item_edit_dlg_addr);
         et_smb_addr.addTextChangedListener(new TextWatcher() {
             @Override
@@ -186,8 +210,9 @@ public class SmbServerEditor {
                 String port="";
                 if (et_smb_port.getText().length()>0) port=":"+et_smb_port.getText().toString();
                 String url="smb://"+et_smb_addr.getText().toString()+port+"/";
-                String smb_level=""+(sp_smb_level.getSelectedItemPosition()+1);
-                selectShareName(smb_level, url, et_smb_user.getText().toString(), et_smb_pass.getText().toString(), ntfy);
+                SmbServerConfig sc=new SmbServerConfig();
+                updateSmbServerConfigItem(mDialog, sc);
+                selectShareName(url,  sc, ntfy);
             }
         });
 
@@ -217,28 +242,12 @@ public class SmbServerEditor {
             public void onClick(View v) {
                 if (mOpCode.equals("ADD")) {
                     mSmbServerConfigitem.setName(et_smb_name.getText().toString());
-                    mSmbServerConfigitem.setSmbHost(et_smb_addr.getText().toString());
-                    mSmbServerConfigitem.setSmbPort(et_smb_port.getText().toString());
-                    mSmbServerConfigitem.setSmbUser(et_smb_user.getText().toString());
-                    mSmbServerConfigitem.setSmbPassword(et_smb_pass.getText().toString());
-                    mSmbServerConfigitem.setSmbShare(et_smb_share_name.getText().toString());
-                    mSmbServerConfigitem.setSmbLevel(""+(sp_smb_level.getSelectedItemPosition()+1));
                 } else if (mOpCode.equals("COPY")) {
                     mSmbServerConfigitem.setName(et_smb_name.getText().toString());
-                    mSmbServerConfigitem.setSmbHost(et_smb_addr.getText().toString());
-                    mSmbServerConfigitem.setSmbPort(et_smb_port.getText().toString());
-                    mSmbServerConfigitem.setSmbUser(et_smb_user.getText().toString());
-                    mSmbServerConfigitem.setSmbPassword(et_smb_pass.getText().toString());
-                    mSmbServerConfigitem.setSmbShare(et_smb_share_name.getText().toString());
-                    mSmbServerConfigitem.setSmbLevel(""+(sp_smb_level.getSelectedItemPosition()+1));
                 } else if (mOpCode.equals("EDIT")) {
-                    mSmbServerConfigitem.setSmbHost(et_smb_addr.getText().toString());
-                    mSmbServerConfigitem.setSmbPort(et_smb_port.getText().toString());
-                    mSmbServerConfigitem.setSmbUser(et_smb_user.getText().toString());
-                    mSmbServerConfigitem.setSmbPassword(et_smb_pass.getText().toString());
-                    mSmbServerConfigitem.setSmbShare(et_smb_share_name.getText().toString());
-                    mSmbServerConfigitem.setSmbLevel(""+(sp_smb_level.getSelectedItemPosition()+1));
+                    //NOP
                 }
+                updateSmbServerConfigItem(mDialog, mSmbServerConfigitem);
                 mParentNotify.notifyToListener(true,new Object[]{mSmbServerConfigitem});
                 mDialog.dismiss();
             }
@@ -266,6 +275,27 @@ public class SmbServerEditor {
         });
 
         mDialog.show();
+    }
+
+    private void updateSmbServerConfigItem(Dialog dialog, SmbServerConfig sc) {
+        final EditText et_smb_name = (EditText) dialog.findViewById(R.id.smb_server_item_edit_dlg_name);
+        final Spinner sp_smb_level = (Spinner) dialog.findViewById(R.id.smb_server_item_edit_dlg_smb_protocol);
+        final CheckedTextView ctv_smb_option_ipc_sign_enforce=(CheckedTextView)dialog.findViewById(R.id.smb_server_item_edit_dlg_smb_ipc_sign_enforce);
+        final CheckedTextView ctv_smb_option_use_smb2_negotiation=(CheckedTextView)dialog.findViewById(R.id.smb_server_item_edit_dlg_smb_use_smb2_negotiation);
+        final EditText et_smb_addr = (EditText) dialog.findViewById(R.id.smb_server_item_edit_dlg_addr);
+        final EditText et_smb_port = (EditText) dialog.findViewById(R.id.smb_server_item_edit_dlg_port);
+        final EditText et_smb_user = (EditText) dialog.findViewById(R.id.smb_server_item_edit_dlg_user);
+        final EditText et_smb_pass = (EditText) dialog.findViewById(R.id.smb_server_item_edit_dlg_pass);
+        final EditText et_smb_share_name = (EditText) dialog.findViewById(R.id.smb_server_item_edit_dlg_share_name);
+
+        sc.setSmbHost(et_smb_addr.getText().toString());
+        sc.setSmbPort(et_smb_port.getText().toString());
+        sc.setSmbUser(et_smb_user.getText().toString());
+        sc.setSmbPassword(et_smb_pass.getText().toString());
+        sc.setSmbShare(et_smb_share_name.getText().toString());
+        sc.setSmbLevel(""+(sp_smb_level.getSelectedItemPosition()+1));
+        sc.setSmbOptionIpcSigningEnforced(ctv_smb_option_ipc_sign_enforce.isChecked());
+        sc.setSmbOptionUseSMB2Negotiation(ctv_smb_option_use_smb2_negotiation.isChecked());
     }
 
     public static void setSpinnerBackground(Context c, Spinner spinner, boolean theme_is_light) {
@@ -305,13 +335,17 @@ public class SmbServerEditor {
         final EditText et_smb_pass = (EditText) mDialog.findViewById(R.id.smb_server_item_edit_dlg_pass);
         final EditText et_smb_share_name = (EditText) mDialog.findViewById(R.id.smb_server_item_edit_dlg_share_name);
         final Spinner sp_smb_level = (Spinner) mDialog.findViewById(R.id.smb_server_item_edit_dlg_smb_protocol);
+        final CheckedTextView ctv_smb_option_ipc_sign_enforce=(CheckedTextView)mDialog.findViewById(R.id.smb_server_item_edit_dlg_smb_ipc_sign_enforce);
+        final CheckedTextView ctv_smb_option_use_smb2_negotiation=(CheckedTextView)mDialog.findViewById(R.id.smb_server_item_edit_dlg_smb_use_smb2_negotiation);
 
         if (et_smb_addr.getText().toString().equals(mSmbServerConfigitem.getSmbHost()) &&
                 et_smb_port.getText().toString().equals(mSmbServerConfigitem.getSmbPort()) &&
                 et_smb_user.getText().toString().equals(mSmbServerConfigitem.getSmbUser()) &&
                 et_smb_pass.getText().toString().equals(mSmbServerConfigitem.getSmbPass()) &&
                 et_smb_share_name.getText().toString().equals(mSmbServerConfigitem.getSmbShare()) &&
-                mSmbServerConfigitem.getSmbLevel().equals(""+(sp_smb_level.getSelectedItemPosition()+1))
+                mSmbServerConfigitem.getSmbLevel().equals(""+(sp_smb_level.getSelectedItemPosition()+1)) &&
+                mSmbServerConfigitem.isSmbOptionIpcSigningEnforced()==ctv_smb_option_ipc_sign_enforce.isChecked() &&
+                mSmbServerConfigitem.isSmbOptionUseSMB2Negotiation()==ctv_smb_option_use_smb2_negotiation.isChecked()
                 ) result=false;
         return result;
     }
@@ -325,6 +359,9 @@ public class SmbServerEditor {
         final EditText et_smb_pass = (EditText) mDialog.findViewById(R.id.smb_server_item_edit_dlg_pass);
         final EditText et_smb_share_name = (EditText) mDialog.findViewById(R.id.smb_server_item_edit_dlg_share_name);
         final Spinner sp_smb_level = (Spinner) mDialog.findViewById(R.id.smb_server_item_edit_dlg_smb_protocol);
+        final CheckedTextView ctv_smb_option_ipc_sign_enforce=(CheckedTextView)mDialog.findViewById(R.id.smb_server_item_edit_dlg_smb_ipc_sign_enforce);
+        final CheckedTextView ctv_smb_option_use_smb2_negotiation=(CheckedTextView)mDialog.findViewById(R.id.smb_server_item_edit_dlg_smb_use_smb2_negotiation);
+
         if (et_smb_addr.getText().length()>0) {
             if (et_smb_share_name.getText().length()>0) {
                 tv_msg.setVisibility(TextView.GONE);
@@ -342,7 +379,7 @@ public class SmbServerEditor {
         }
     }
 
-    private void selectShareName(String smb_level, String url, String user, String pass, final NotifyEvent p_ntfy) {
+    private void selectShareName(String url, SmbServerConfig sc, final NotifyEvent p_ntfy) {
         NotifyEvent ntfy=new NotifyEvent(mContext);
         ntfy.setListener(new NotifyEvent.NotifyEventListener() {
             @Override
@@ -423,7 +460,7 @@ public class SmbServerEditor {
                 mGp.commonDlg.showCommonDialog(false,"W", "Error",error_msg,null);
             }
         });
-        SmbServerUtil.createSmbServerFileList(mActivity, mGp, RetrieveFileList.OPCD_SHARE_LIST, smb_level, url, user, pass, ntfy);
+        SmbServerUtil.createSmbServerFileList(mActivity, mGp, RetrieveFileList.OPCD_SHARE_LIST, url, sc, ntfy);
     }
 
 

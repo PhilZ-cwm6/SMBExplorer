@@ -149,14 +149,16 @@ public class FileIo extends Thread {
 		}
 	}
 
-	private JcifsAuth createJcifsAuth(String smb_level, String domain, String user, String pass) {
-	    return new JcifsAuth(Integer.parseInt(smb_level), domain, user,pass);
+	private JcifsAuth createJcifsAuth(String smb_level, String domain, String user, String pass, boolean ipc_sign_enforce, boolean use_smb2_nego) {
+	    return new JcifsAuth(Integer.parseInt(smb_level), domain, user, pass, ipc_sign_enforce, use_smb2_nego);
     }
 
 	private boolean fileOperation(FileIoLinkParm fiop) {
-		sendDebugLogMsg(2,"I","FILEIO task invoked.",
+		sendDebugLogMsg(1,"I","FILEIO task invoked.",
                 " fromUrl=",fiop.getFromDirectory(), ", fromName=",fiop.getFromName(),", fromBaseUrl=",fiop.getFromBaseDirectory(),", fromSmbLebel=",fiop.getFromSmbLevel(),", fromUser=",fiop.getFromUser(),
-                ", toUrl=",fiop.getToDirectory(), ", toName=",fiop.getToName(), ", toBaseUrl=",fiop.getToBaseDirectory(),", toSmbLebel=",fiop.getToSmbLevel(),", toUser=",fiop.getToUser());
+                ", From IPC="+fiop.isFromSmbOptionIpcSignEnforce()+", From SMB2 Negotiation="+fiop.isFromSmbOptionUseSMB2Negotiation()+
+                ", toUrl=",fiop.getToDirectory(), ", toName=",fiop.getToName(), ", toBaseUrl=",fiop.getToBaseDirectory(),", toSmbLebel=",fiop.getToSmbLevel(),", toUser=",fiop.getToUser()+
+                ", To IPC="+fiop.isToSmbOptionIpcSignEnforce()+", To SMB2 Negotiation="+fiop.isToSmbOptionUseSMB2Negotiation());
 
 		boolean result=false;
         JcifsAuth smb_auth_from =null, smb_auth_to =null;
@@ -165,47 +167,47 @@ public class FileIo extends Thread {
 				result=createLocalDir(fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_REMOTE_CREATE:
-                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
+                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass(), fiop.isToSmbOptionIpcSignEnforce(), fiop.isToSmbOptionUseSMB2Negotiation());
                 result=createRemoteDir(smb_auth_to, fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_LOCAL_RENAME:
 				result=renameLocalItem(fiop.getFromDirectory()+"/"+fiop.getFromName(),  fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_REMOTE_RENAME:
-                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
+                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass(), fiop.isToSmbOptionIpcSignEnforce(), fiop.isToSmbOptionUseSMB2Negotiation());
 				result=renameRemoteItem(smb_auth_to, fiop.getFromDirectory()+"/"+fiop.getFromName()+"/", fiop.getToDirectory()+"/"+fiop.getToName()+"/");
 				break;
 			case FILEIO_PARM_LOCAL_DELETE:
 				result=deleteLocalItem(fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_REMOTE_DELETE:
-                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
+                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass(), fiop.isToSmbOptionIpcSignEnforce(), fiop.isToSmbOptionUseSMB2Negotiation());
 				result=deleteRemoteItem(smb_auth_to, fiop.getToDirectory()+"/"+fiop.getToName()+"/");
 				break;
 			case FILEIO_PARM_COPY_REMOTE_TO_LOCAL:
-                smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass());
+                smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass(), fiop.isFromSmbOptionIpcSignEnforce(), fiop.isFromSmbOptionUseSMB2Negotiation());
 				result=copyRemoteToLocal(smb_auth_from, fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_COPY_REMOTE_TO_REMOTE:
-                smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass());
-                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
+                smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass(), fiop.isFromSmbOptionIpcSignEnforce(), fiop.isFromSmbOptionUseSMB2Negotiation());
+                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass(), fiop.isToSmbOptionIpcSignEnforce(), fiop.isToSmbOptionUseSMB2Negotiation());
 				result=copyRemoteToRemote(smb_auth_from, smb_auth_to, fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_COPY_LOCAL_TO_LOCAL:
 				result=copyLocalToLocal(fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_COPY_LOCAL_TO_REMOTE:
-                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
+                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass(), fiop.isToSmbOptionIpcSignEnforce(), fiop.isToSmbOptionUseSMB2Negotiation());
 				result=copyLocalToRemote(smb_auth_to, fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_MOVE_REMOTE_TO_LOCAL:
-                smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass());
+                smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass(), fiop.isFromSmbOptionIpcSignEnforce(), fiop.isFromSmbOptionUseSMB2Negotiation());
 				result=copyRemoteToLocal(smb_auth_from, fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				if (result) result=deleteRemoteItem(smb_auth_from, fiop.getFromDirectory()+"/"+fiop.getToName()+"/");
 				break;
 			case FILEIO_PARM_MOVE_REMOTE_TO_REMOTE:
-                smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass());
-                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
+                smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass(), fiop.isFromSmbOptionIpcSignEnforce(), fiop.isFromSmbOptionUseSMB2Negotiation());
+                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass(), fiop.isToSmbOptionIpcSignEnforce(), fiop.isToSmbOptionUseSMB2Negotiation());
 				if (fiop.getFromBaseDirectory().equals(fiop.getToBaseDirectory())) {
 					result= moveRemoteToRemoteByRename(smb_auth_from, smb_auth_to, fiop.getFromDirectory()+"/"+fiop.getFromName()+"/", fiop.getToDirectory()+"/"+fiop.getToName());
 				} else {
@@ -217,12 +219,12 @@ public class FileIo extends Thread {
 				result=moveLocalToLocal(fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 			case FILEIO_PARM_MOVE_LOCAL_TO_REMOTE:
-                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass());
+                smb_auth_to =createJcifsAuth(fiop.getToSmbLevel(), fiop.getToDomain(), fiop.getToUser(), fiop.getToPass(), fiop.isToSmbOptionIpcSignEnforce(), fiop.isToSmbOptionUseSMB2Negotiation());
 				result=copyLocalToRemote(smb_auth_to, fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				if (result) result=deleteLocalItem(fiop.getFromDirectory()+"/"+fiop.getFromName());
 				break;
 			case FILEIO_PARM_DOWLOAD_REMOTE_FILE:
-                smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass());
+                smb_auth_from =createJcifsAuth(fiop.getFromSmbLevel(), fiop.getFromDomain(), fiop.getFromUser(), fiop.getFromPass(), fiop.isFromSmbOptionIpcSignEnforce(), fiop.isFromSmbOptionUseSMB2Negotiation());
                 result=downloadRemoteFile(smb_auth_from, fiop.getFromDirectory()+"/"+fiop.getFromName(), fiop.getToDirectory()+"/"+fiop.getToName());
 				break;
 	

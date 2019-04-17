@@ -27,10 +27,25 @@ public class FileIoLinkParm {
 	FileIoLinkParm () {}
 	
     private String fromUrl="", fromDomain="", fromSmbLevel="3", fromUser="", fromPass="", fromBaseUrl="", fromName="";
+	private boolean fromSmbOptionIpcSignEnforce=true;
+    private boolean fromSmbOptionUseSMB2Negotiation=false;
     private String toUrl="", toDomain="", toSmbLevel="3", toUser="", toPass="", toBaseUrl="", toFileName="";
+    private boolean toSmbOptionIpcSignEnforce=true;
+    private boolean toSmbOptionUseSMB2Negotiation=false;
 
+    public boolean isFromSmbOptionIpcSignEnforce() {return fromSmbOptionIpcSignEnforce;}
+    public void setFromSmbOptionIpcSignEnforce(boolean p) {fromSmbOptionIpcSignEnforce=p;}
 
-	public void setFromDirectory(String url) {fromUrl=url;}
+    public boolean isFromSmbOptionUseSMB2Negotiation() {return fromSmbOptionUseSMB2Negotiation;}
+    public void setFromSmbOptionUseSMB2Negotiation(boolean p) {fromSmbOptionUseSMB2Negotiation=p;}
+
+    public boolean isToSmbOptionIpcSignEnforce() {return toSmbOptionIpcSignEnforce;}
+    public void setToSmbOptionIpcSignEnforce(boolean p) {toSmbOptionIpcSignEnforce=p;}
+
+    public boolean isToSmbOptionUseSMB2Negotiation() {return toSmbOptionUseSMB2Negotiation;}
+    public void setToSmbOptionUseSMB2Negotiation(boolean p) {toSmbOptionUseSMB2Negotiation=p;}
+
+    public void setFromDirectory(String url) {fromUrl=url;}
     public void setFromName(String name) {fromName=name;}
     public void setFromBaseDirectory(String url) {fromBaseUrl=url;}
     public void setFromDomain(String domain) {fromDomain=domain;}

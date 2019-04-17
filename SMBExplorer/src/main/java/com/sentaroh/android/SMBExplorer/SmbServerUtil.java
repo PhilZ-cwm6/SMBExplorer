@@ -77,6 +77,9 @@ public class SmbServerUtil {
     private static final String CONFIG_TAG_SERVER_SMB_SHARE ="smb_share";
     private static final String CONFIG_TAG_SERVER_SMB_LEVEL ="smb_level";
 
+    private static final String CONFIG_TAG_SERVER_SMB_OPTION_IPC_SIGN_ENFORCE ="smb_option_ipc_sign_enforce";
+    private static final String CONFIG_TAG_SERVER_SMB_OPTION_USE_SMB2_NEGOTIATION ="smb_option_use_smb2_negotiation";
+
     static public ArrayList<SmbServerConfig> createSmbServerConfigList(GlobalParameters gp, boolean sdcard, String fp) {
 
         ArrayList<SmbServerConfig> rem = new ArrayList<SmbServerConfig>();
@@ -193,6 +196,8 @@ public class SmbServerUtil {
             else if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_SMB_PORT)) {smb_item.setSmbPort(xpp.getAttributeValue(i));}
             else if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_SMB_SHARE)) {smb_item.setSmbShare(xpp.getAttributeValue(i));}
             else if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_SMB_LEVEL)) {smb_item.setSmbLevel(xpp.getAttributeValue(i));}
+            else if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_SMB_OPTION_IPC_SIGN_ENFORCE)) {smb_item.setSmbOptionIpcSigningEnforced((xpp.getAttributeValue(i).toLowerCase()).equals("true")?true:false);}
+            else if (xpp.getAttributeName(i).equals(CONFIG_TAG_SERVER_SMB_OPTION_USE_SMB2_NEGOTIATION)) {smb_item.setSmbOptionUseSMB2Negotiation((xpp.getAttributeValue(i).toLowerCase()).equals("true")?true:false);}
 
         }
         return smb_item;
@@ -248,6 +253,8 @@ public class SmbServerUtil {
                         server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_PORT, item.getSmbPort());
                         server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_SHARE, item.getSmbShare());
                         server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_LEVEL, item.getSmbLevel());
+                        server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_OPTION_IPC_SIGN_ENFORCE, item.isSmbOptionIpcSigningEnforced()?"true":"false");
+                        server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_OPTION_USE_SMB2_NEGOTIATION, item.isSmbOptionUseSMB2Negotiation()?"true":"false");
                     }
 
                     main_document.appendChild(config_tag);
@@ -361,8 +368,8 @@ public class SmbServerUtil {
         }
     }
 
-    static public void createSmbServerFileList(MainActivity activity, GlobalParameters gp, String opcd, String smb_level,
-                                               String url, String user, String pass, final NotifyEvent n_event) {
+    static public void createSmbServerFileList(MainActivity activity, GlobalParameters gp, String opcd,
+                                               String url, SmbServerConfig sc, final NotifyEvent n_event) {
         final ArrayList<FileListItem> remoteFileList=new ArrayList<FileListItem>();
 
         final ThreadCtrl tc = new ThreadCtrl();
@@ -406,7 +413,7 @@ public class SmbServerUtil {
             }
         });
 
-        Thread th = new RetrieveFileList(gp, tc, opcd, smb_level, url, remoteFileList,user,pass,ne);
+        Thread th = new RetrieveFileList(gp, tc, opcd, url, remoteFileList, sc, ne);
         th.start();
         pi_dialog.show();
     }
