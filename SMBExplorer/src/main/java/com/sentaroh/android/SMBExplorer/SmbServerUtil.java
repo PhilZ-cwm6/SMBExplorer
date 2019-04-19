@@ -370,7 +370,7 @@ public class SmbServerUtil {
         }
     }
 
-    static public void createSmbServerFileList(MainActivity activity, GlobalParameters gp, String opcd,
+    static public void createSmbServerFileList(ActivityMain activity, GlobalParameters gp, String opcd,
                                                String url, SmbServerConfig sc, final NotifyEvent n_event) {
         final ArrayList<FileListItem> remoteFileList=new ArrayList<FileListItem>();
 

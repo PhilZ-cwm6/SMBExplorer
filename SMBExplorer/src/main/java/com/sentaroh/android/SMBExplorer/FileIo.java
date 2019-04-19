@@ -156,9 +156,9 @@ public class FileIo extends Thread {
 	private boolean fileOperation(FileIoLinkParm fiop) {
 		sendDebugLogMsg(1,"I","FILEIO task invoked.",
                 " fromUrl=",fiop.getFromDirectory(), ", fromName=",fiop.getFromName(),", fromBaseUrl=",fiop.getFromBaseDirectory(),", fromSmbLebel=",fiop.getFromSmbLevel(),", fromUser=",fiop.getFromUser(),
-                ", From IPC="+fiop.isFromSmbOptionIpcSignEnforce()+", From SMB2 Negotiation="+fiop.isFromSmbOptionUseSMB2Negotiation()+
+                ", FromIPC="+fiop.isFromSmbOptionIpcSignEnforce()+", FromSMB2Nego="+fiop.isFromSmbOptionUseSMB2Negotiation()+
                 ", toUrl=",fiop.getToDirectory(), ", toName=",fiop.getToName(), ", toBaseUrl=",fiop.getToBaseDirectory(),", toSmbLebel=",fiop.getToSmbLevel(),", toUser=",fiop.getToUser()+
-                ", To IPC="+fiop.isToSmbOptionIpcSignEnforce()+", To SMB2 Negotiation="+fiop.isToSmbOptionUseSMB2Negotiation());
+                ", ToIPC="+fiop.isToSmbOptionIpcSignEnforce()+", ToSMB2Nego="+fiop.isToSmbOptionUseSMB2Negotiation());
 
 		boolean result=false;
         JcifsAuth smb_auth_from =null, smb_auth_to =null;

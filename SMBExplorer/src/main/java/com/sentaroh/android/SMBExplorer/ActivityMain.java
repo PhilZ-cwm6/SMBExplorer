@@ -37,7 +37,6 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -46,12 +45,10 @@ import android.os.RemoteException;
 import android.os.StrictMode;
 import android.os.SystemClock;
 import android.os.storage.StorageManager;
-import android.provider.DocumentsContract;
-import android.support.v4.content.ContextCompat;
+import android.os.storage.StorageVolume;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -87,13 +84,14 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_PROFILE_NAME;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_LOCAL;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_POS_LOCAL;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_REMOTE;
 
-public class MainActivity extends AppCompatActivity {
+public class ActivityMain extends AppCompatActivity {
 	private final static String DEBUG_TAG = "SMBExplorer";
 
 	private GlobalParameters mGp=null;
@@ -103,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
 	private int restartStatus=0;
 	private Context mContext=null;
 	private CustomContextMenu ccMenu = null;
-	private MainActivity mActivity=null;
+	private ActivityMain mActivity=null;
 	private ActionBar mActionBar=null;
 
     private CustomViewPager mMainViewPager=null;
@@ -837,18 +835,68 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	private void invokeSettingsActivity() {
-		Intent intent = new Intent(this, MainSetting.class);
+		Intent intent = new Intent(this, ActivitySetting.class);
 		startActivityForResult(intent,0);
 	}
 
-	private final int REQUEST_CODE_STORAGE_ACCESS=40;
+	private final int REQUEST_CODE_STORAGE_ACCESS =40;
 
 	private void openStorageSelector(int request_code) {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-        startActivityForResult(intent, request_code);
+	    if (!mGp.safMgr.isSdcardMounted()) openSdcardStorageSelector(request_code);
+	    else if (!mGp.safMgr.isUsbMounted()) openUsbStorageSelector(request_code);
     }
-	
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+	private void openSdcardStorageSelector(int request_code) {
+        Intent intent = null;
+        StorageManager sm = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);
+        List<StorageVolume>vol_list=sm.getStorageVolumes();
+        StorageVolume sdcard_sv=null;
+        for(StorageVolume item:vol_list) {
+            if (item.getDescription(mContext).startsWith("SD")) {
+                sdcard_sv=item;
+                break;
+            }
+        }
+        if (sdcard_sv!=null) {
+            if (Build.VERSION.SDK_INT>=24 && Build.VERSION.SDK_INT<=28) {
+                if (sdcard_sv!=null) {
+                    intent=sdcard_sv.createAccessIntent(null);
+                } else {
+                    intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                }
+            } else {
+                intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+            }
+            startActivityForResult(intent, request_code);
+        } else {
+            mUtil.addDebugMsg(1,"I","SDCARD Storage not mounted");
+        }
+    }
+
+    private void openUsbStorageSelector(int request_code) {
+        Intent intent = null;
+        StorageManager sm = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);
+        List<StorageVolume>vol_list=sm.getStorageVolumes();
+        StorageVolume usb_sv=null;
+        for(StorageVolume item:vol_list) {
+            if (item.getDescription(mContext).startsWith("USB")) {
+                usb_sv=item;
+                break;
+            }
+        }
+        if (usb_sv!=null) {
+            if (Build.VERSION.SDK_INT>=24 && Build.VERSION.SDK_INT<=28) {
+                intent=usb_sv.createAccessIntent(null);
+            } else {
+                intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+            }
+            startActivityForResult(intent, request_code);
+        } else {
+            mUtil.addDebugMsg(1,"I","USB Storage not mounted");
+        }
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (requestCode == REQUEST_CODE_STORAGE_ACCESS) {
 	        if (resultCode == Activity.RESULT_OK) {
                 mUtil.addDebugMsg(1,"I","Storage picker action="+data.getAction());
@@ -862,7 +910,7 @@ public class MainActivity extends AppCompatActivity {
                         ntfy.setListener(new NotifyEvent.NotifyEventListener() {
                             @Override
                             public void positiveResponse(Context context, Object[] objects) {
-                                openStorageSelector(REQUEST_CODE_STORAGE_ACCESS);
+                                openUsbStorageSelector(REQUEST_CODE_STORAGE_ACCESS);
                             }
                             @Override
                             public void negativeResponse(Context context, Object[] objects) {}
@@ -879,7 +927,7 @@ public class MainActivity extends AppCompatActivity {
                         ntfy.setListener(new NotifyEvent.NotifyEventListener() {
                             @Override
                             public void positiveResponse(Context context, Object[] objects) {
-                                openStorageSelector(REQUEST_CODE_STORAGE_ACCESS);
+                                openSdcardStorageSelector(REQUEST_CODE_STORAGE_ACCESS);
                             }
                             @Override
                             public void negativeResponse(Context context, Object[] objects) {}
@@ -994,7 +1042,7 @@ public class MainActivity extends AppCompatActivity {
                             ntfy.setListener(new NotifyEvent.NotifyEventListener() {
                                 @Override
                                 public void positiveResponse(Context context, Object[] objects) {
-                                    openStorageSelector(REQUEST_CODE_STORAGE_ACCESS);
+                                    openUsbStorageSelector(REQUEST_CODE_STORAGE_ACCESS);
                                 }
                                 @Override
                                 public void negativeResponse(Context context, Object[] objects) {}

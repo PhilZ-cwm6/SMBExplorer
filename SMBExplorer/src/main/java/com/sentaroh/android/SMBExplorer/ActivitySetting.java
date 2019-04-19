@@ -35,11 +35,11 @@ import android.preference.PreferenceManager;
 
 import com.sentaroh.android.Utilities.LocalMountPoint;
 
-public class MainSetting extends PreferenceActivity {
+public class ActivitySetting extends PreferenceActivity {
     private static Context mContext=null;
     private static PreferenceFragment mPrefFrag=null;
 
-    private static MainSetting mPrefActivity=null;
+    private static ActivitySetting mPrefActivity=null;
 
     private static GlobalParameters mGp=null;
 

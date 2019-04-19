@@ -63,7 +63,7 @@ public class SmbServerListEditor {
 
     private GlobalParameters mGp = null;
     private Context mContext = null;
-    private MainActivity mActivity = null;
+    private ActivityMain mActivity = null;
     private CommonUtilities mUtil = null;
     private SmbServerListAdapter mSmbServerListAdapter = null;
 
@@ -87,7 +87,7 @@ public class SmbServerListEditor {
 
     private ArrayList<SmbServerConfig> mSmbConfigList =new ArrayList<SmbServerConfig>();
 
-    public SmbServerListEditor(MainActivity a, GlobalParameters gp) {
+    public SmbServerListEditor(ActivityMain a, GlobalParameters gp) {
         mContext = gp.context;
         mActivity = a;
         mGp = gp;

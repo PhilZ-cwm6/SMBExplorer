@@ -72,13 +72,13 @@ public class FileManager {
 
     private GlobalParameters mGp;
     private Context mContext;
-    private MainActivity mActivity;
+    private ActivityMain mActivity;
     private CommonUtilities mUtil=null;
     private CustomContextMenu ccMenu = null;
     private boolean mSpinnerSelectionEnabled =true;
     private Handler mUiHandler=null;
 
-    public FileManager(MainActivity a, GlobalParameters gp, CommonUtilities mu, CustomContextMenu cc) {
+    public FileManager(ActivityMain a, GlobalParameters gp, CommonUtilities mu, CustomContextMenu cc) {
         mActivity=a;
         mGp=gp;
         mContext=gp.context;

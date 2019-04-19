@@ -47,7 +47,7 @@ import static com.sentaroh.android.SMBExplorer.AdapterSmbServerList.NetworkScanL
 
 public class ScanSmbServer {
 
-    private MainActivity mActivity =null;
+    private ActivityMain mActivity =null;
     private Context mContext = null;
     private GlobalParameters mGp=null;
     private CommonUtilities mUtil=null;
@@ -55,7 +55,7 @@ public class ScanSmbServer {
     private static final Logger log = LoggerFactory.getLogger(ScanSmbServer.class);
 
     private int mSmbLevel = JcifsAuth.JCIFS_FILE_SMB211;
-    public ScanSmbServer(MainActivity a, GlobalParameters gp, String smb_level) {
+    public ScanSmbServer(ActivityMain a, GlobalParameters gp, String smb_level) {
         mActivity=a;
         mContext=gp.context;
         mGp=gp;

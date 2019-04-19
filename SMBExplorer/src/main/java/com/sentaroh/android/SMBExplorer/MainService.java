@@ -230,7 +230,7 @@ public class MainService extends Service {
                 .setContentText(mContext.getString(R.string.msgs_main_notification_message))
 //                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.smbexplorer))
                 .setSmallIcon(R.drawable.ic_48_smbexplorer);
-        Intent activity_intent = new Intent(mContext, MainActivity.class);
+        Intent activity_intent = new Intent(mContext, ActivityMain.class);
         PendingIntent activity_pi=PendingIntent.getActivity(mContext, 0, activity_intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
         mNotificationBuilder.setContentIntent(activity_pi);

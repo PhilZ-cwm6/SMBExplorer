@@ -27,14 +27,14 @@ import java.util.Collections;
 
 public class SmbServerEditor {
     private GlobalParameters mGp;
-    private MainActivity mActivity;
+    private ActivityMain mActivity;
     private Context mContext;
     private SmbServerConfig mSmbServerConfigitem;
     private NotifyEvent mParentNotify;
     private Dialog mDialog;
     private String mOpCode;
 
-    public SmbServerEditor(String op, MainActivity a, GlobalParameters gp, SmbServerConfig item, NotifyEvent ntfy) {
+    public SmbServerEditor(String op, ActivityMain a, GlobalParameters gp, SmbServerConfig item, NotifyEvent ntfy) {
         mGp=gp;
         mActivity=a;
         mContext=gp.context;
