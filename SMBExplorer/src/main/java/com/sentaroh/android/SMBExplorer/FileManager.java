@@ -193,7 +193,7 @@ public class FileManager {
 
     public void refreshFileListView() {
         if (mGp.currentTabName.equals(SMBEXPLORER_TAB_LOCAL)) {
-            mGp.safMgr.loadSafFile();
+            mGp.safMgr.loadSafFileNoUsbMountPoint();
             if (!mGp.localBase.equals("")) {
                 if (mGp.localBase.startsWith(mGp.safMgr.getUsbRootPath())) {
                     NotifyEvent ntfy=new NotifyEvent(mContext);
