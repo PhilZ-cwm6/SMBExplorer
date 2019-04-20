@@ -97,7 +97,21 @@ public class FileListAdapter extends BaseAdapter {
 			mDataItems.get(i).setChecked(checked);
 		notifyDataSetChanged();
 	};
-	
+
+//    @Override
+//    public boolean isEnabled(int pos) {
+//        return isAdapterEnabled();
+//    }
+
+    private boolean mAdapterEnabled=true;
+	public void setAdapterEnabled(boolean enabled) {
+        mAdapterEnabled=enabled;
+    }
+
+    public boolean isAdapterEnabled() {
+        return mAdapterEnabled;
+    }
+
 	public boolean isSingleSelectMode() {
 		return mSingleSelectMode;
 	};
@@ -170,7 +184,8 @@ public class FileListAdapter extends BaseAdapter {
                 LayoutInflater vi = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 v = vi.inflate(R.layout.file_list_item, parent, false);
                 holder=new ViewHolder();
-                
+
+                holder.ll_file_list_view=(LinearLayout)v.findViewById(R.id.file_list_view);
             	holder.cb_cb1=(CheckBox)v.findViewById(R.id.file_list_checkbox);
             	holder.rb_rb1=(RadioButton)v.findViewById(R.id.file_list_radiobtn);
             	holder.iv_image1=(ImageView)v.findViewById(R.id.file_list_icon);
@@ -188,6 +203,8 @@ public class FileListAdapter extends BaseAdapter {
             v.setEnabled(true);
             final FileListItem o = mDataItems.get(position);
             if (o != null) {
+                if (isAdapterEnabled()) holder.ll_file_list_view.setAlpha(1.0f);
+                else holder.ll_file_list_view.setAlpha(0.3f);
             	if (o.isEnableItem()) {
 	            	holder.cb_cb1.setEnabled(true);
             		holder.rb_rb1.setEnabled(true);
@@ -256,16 +273,16 @@ public class FileListAdapter extends BaseAdapter {
                    	}
             	}
                	final int p = position;
+                holder.cb_cb1.setEnabled(isAdapterEnabled());
            		holder.cb_cb1.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-					public void onCheckedChanged(CompoundButton buttonView,
-							boolean isChecked) {
+					public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 						setButton(o,p,isChecked);
 						notifyDataSetChanged();
   					}
    				});
+                holder.rb_rb1.setEnabled(isAdapterEnabled());
            		holder.rb_rb1.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-					public void onCheckedChanged(CompoundButton buttonView,
-							boolean isChecked) {
+					public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 						setButton(o,p,isChecked);
 						notifyDataSetChanged();
   					}
@@ -280,18 +297,18 @@ public class FileListAdapter extends BaseAdapter {
     private void setButton(FileListItem o,int p, boolean isChecked) {
 		if (enableListener) {
 			enableListener=false;
-				if (mSingleSelectMode) {
-					if (isChecked) {
-						FileListItem fi;
-						for (int i=0;i<mDataItems.size();i++) {
-							fi=mDataItems.get(i);
-							if (fi.isChecked()&&p!=i) {
-								fi.setChecked(false);
-							}
-						}
-					}
-				}
-				enableListener=true;
+            if (mSingleSelectMode) {
+                if (isChecked) {
+                    FileListItem fi;
+                    for (int i=0;i<mDataItems.size();i++) {
+                        fi=mDataItems.get(i);
+                        if (fi.isChecked()&&p!=i) {
+                            fi.setChecked(false);
+                        }
+                    }
+                }
+            }
+            enableListener=true;
 		}
 		boolean c_chk=o.isChecked();
 		o.setChecked(isChecked);
@@ -301,7 +318,7 @@ public class FileListAdapter extends BaseAdapter {
     
 	static class ViewHolder {
 		 TextView tv_name, tv_moddate, tv_modtime, tv_size, tv_count;
-		 LinearLayout tv_select;
+		 LinearLayout tv_select, ll_file_list_view;
 		 ImageView iv_image1;
 		 CheckBox cb_cb1;
 		 RadioButton rb_rb1;

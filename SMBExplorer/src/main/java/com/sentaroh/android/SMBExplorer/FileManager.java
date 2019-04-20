@@ -747,11 +747,15 @@ public class FileManager {
                 mGp.remoteFileListTopBtn.setEnabled(true);
                 mGp.remoteFileListUpBtn.setEnabled(true);
             }
+            mGp.remoteFileListAdapter.setAdapterEnabled(true);
+            mGp.remoteFileListAdapter.notifyDataSetChanged();
         } else {
             mGp.remoteFileListDirSpinner.setEnabled(false);
             mGp.remoteFileListView.setEnabled(false);
             mGp.remoteFileListTopBtn.setEnabled(false);
             mGp.remoteFileListUpBtn.setEnabled(false);
+            mGp.remoteFileListAdapter.setAdapterEnabled(false);
+            mGp.remoteFileListAdapter.notifyDataSetChanged();
         }
     }
 
@@ -864,7 +868,9 @@ public class FileManager {
                 setRemoteContextButtonStatus();
             }
             @Override
-            public void negativeResponse(Context context, Object[] objects) {}
+            public void negativeResponse(Context context, Object[] objects) {
+                setRemoteContextButtonStatus();
+            }
         });
         mGp.remoteFileListAdapter.setCbCheckListener(cb);
 
