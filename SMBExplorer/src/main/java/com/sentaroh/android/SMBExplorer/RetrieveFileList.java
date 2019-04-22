@@ -75,8 +75,8 @@ public class RetrieveFileList extends Thread  {
 		
 		opCode=OPCD_EXISTS_CHECK; //check item is exists
 
-		if (!sc.getSmbUser().equals("")) tuser=sc.getSmbUser();
-		if (!sc.getSmbPass().equals("")) tpass=sc.getSmbPass();
+        if (sc.getSmbUser()!=null && !sc.getSmbUser().equals("")) tuser=sc.getSmbUser();
+        if (sc.getSmbPass()!=null && !sc.getSmbPass().equals("")) tpass=sc.getSmbPass();
         mSmbLevel =Integer.parseInt(sc.getSmbLevel());
 	}
 
@@ -101,8 +101,8 @@ public class RetrieveFileList extends Thread  {
 
         opCode=opcd;
 
-        if (!sc.getSmbUser().equals("")) tuser=sc.getSmbUser();
-        if (!sc.getSmbPass().equals("")) tpass=sc.getSmbPass();
+        if (sc.getSmbUser()!=null && !sc.getSmbUser().equals("")) tuser=sc.getSmbUser();
+        if (sc.getSmbPass()!=null && !sc.getSmbPass().equals("")) tpass=sc.getSmbPass();
         mSmbLevel =Integer.parseInt(sc.getSmbLevel());
 	}
 	

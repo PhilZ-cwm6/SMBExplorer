@@ -239,8 +239,8 @@ public class SmbServerUtil {
                         server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_DOMAIN, item.getSmbDomain());
                         if (sdcard) {
                             //Do not write User and Password data
-//                            server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_USER, item.getSmbUser());
-//                            server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_PASSWORD, item.getSmbPass());
+                            server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_USER, item.getSmbUser());
+                            server_tag.setAttribute(CONFIG_TAG_SERVER_SMB_PASSWORD, item.getSmbPass());
                         } else {
                             if (item.getSmbUser()!=null && !item.getSmbUser().equals("")) {
                                 String enc =Base64Compat.encodeToString(EncryptUtil.encrypt(item.getSmbUser(), cp_int), Base64Compat.NO_WRAP);
