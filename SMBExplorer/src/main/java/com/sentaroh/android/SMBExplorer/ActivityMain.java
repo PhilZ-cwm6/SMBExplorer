@@ -875,24 +875,29 @@ public class ActivityMain extends AppCompatActivity {
 
     private void openUsbStorageSelector(int request_code) {
         Intent intent = null;
-        StorageManager sm = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);
-        List<StorageVolume>vol_list=sm.getStorageVolumes();
-        StorageVolume usb_sv=null;
-        for(StorageVolume item:vol_list) {
-            if (item.getDescription(mContext).startsWith("USB")) {
-                usb_sv=item;
-                break;
+        if (Build.VERSION.SDK_INT>=24 && Build.VERSION.SDK_INT<=28) {
+            StorageManager sm = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);
+            List<StorageVolume>vol_list=sm.getStorageVolumes();
+            StorageVolume usb_sv=null;
+            for(StorageVolume item:vol_list) {
+                if (item.getDescription(mContext).startsWith("USB")) {
+                    usb_sv=item;
+                    break;
+                }
             }
-        }
-        if (usb_sv!=null) {
-            if (Build.VERSION.SDK_INT>=24 && Build.VERSION.SDK_INT<=28) {
-                intent=usb_sv.createAccessIntent(null);
+            if (usb_sv!=null) {
+                if (Build.VERSION.SDK_INT>=24 && Build.VERSION.SDK_INT<=28) {
+                    intent=usb_sv.createAccessIntent(null);
+                } else {
+                    intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                }
+                startActivityForResult(intent, request_code);
             } else {
-                intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                mUtil.addDebugMsg(1,"I","USB Storage not mounted");
             }
-            startActivityForResult(intent, request_code);
         } else {
-            mUtil.addDebugMsg(1,"I","USB Storage not mounted");
+            intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+            startActivityForResult(intent, request_code);
         }
     }
 
