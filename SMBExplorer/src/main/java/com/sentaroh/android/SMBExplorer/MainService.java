@@ -31,6 +31,7 @@ public class MainService extends Service {
     private WifiManager mWifiMgr = null;
     private SleepReceiver mSleepReceiver=new SleepReceiver();
     private WifiReceiver mWifiReceiver=new WifiReceiver();
+    private MediaReceiver mMediaReceiver=new MediaReceiver();
 
     private PowerManager.WakeLock mPartialWakelock=null;
 
@@ -65,6 +66,18 @@ public class MainService extends Service {
         int_filter.addAction(Intent.ACTION_SCREEN_ON);
         int_filter.addAction(Intent.ACTION_USER_PRESENT);
         registerReceiver(mSleepReceiver, int_filter);
+
+        IntentFilter media_filter = new IntentFilter();
+        media_filter.addAction(Intent.ACTION_MEDIA_MOUNTED);
+        media_filter.addDataScheme("file");
+        media_filter.addAction(Intent.ACTION_MEDIA_EJECT);
+        media_filter.addDataScheme("file");
+        media_filter.addAction(Intent.ACTION_MEDIA_REMOVED);
+        media_filter.addDataScheme("file");
+        media_filter.addAction(Intent.ACTION_MEDIA_UNMOUNTED);
+        media_filter.addDataScheme("file");
+        registerReceiver(mMediaReceiver, media_filter);
+
 
         mPartialWakelock=((PowerManager)getSystemService(Context.POWER_SERVICE))
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK
@@ -109,7 +122,13 @@ public class MainService extends Service {
         wl.acquire();
         String action="";
         if (intent!=null) if (intent.getAction()!=null) action=intent.getAction();
-        if (action.equals(SERVICE_HEART_BEAT)) {
+        if (action.equals(Intent.ACTION_MEDIA_MOUNTED) ||
+//                action.equals(Intent.ACTION_MEDIA_EJECT) ||
+//                action.equals(Intent.ACTION_MEDIA_REMOVED) ||
+                action.equals(Intent.ACTION_MEDIA_UNMOUNTED)) {
+            mGp.safMgr.loadSafFileNoUsbMountPoint();
+            notifyToMediaStatusChanged();
+        } else if (action.equals(SERVICE_HEART_BEAT)) {
 //            mUtil.addDebugMsg(1,"I","onStartCommand entered, action="+action);
             setHeartBeat();
         } else {
@@ -149,6 +168,7 @@ public class MainService extends Service {
         mUtil.addDebugMsg(1,"I",CommonUtilities.getExecutedMethodName()+" entered");
         unregisterReceiver(mSleepReceiver);
         unregisterReceiver(mWifiReceiver);
+        unregisterReceiver(mMediaReceiver);
         cancelHeartBeat();
         stopForeground(true);
         LogUtil.flushLog(mContext, mGp);
@@ -294,6 +314,32 @@ public class MainService extends Service {
         if (mGp.callbackStub != null) {
             try {
                 mGp.callbackStub.cbWifiStatusChanged();
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    final private class MediaReceiver  extends BroadcastReceiver {
+        @SuppressLint({ "Wakelock", "NewApi"})
+        @Override
+        final public void onReceive(Context c, Intent in) {
+            String action = in.getAction();
+            mUtil.addDebugMsg(1,"I","Media Action="+action+", Path="+in.getDataString());
+            if (action.equals(Intent.ACTION_MEDIA_MOUNTED) ||
+//                action.equals(Intent.ACTION_MEDIA_EJECT) ||
+//                action.equals(Intent.ACTION_MEDIA_REMOVED) ||
+                    action.equals(Intent.ACTION_MEDIA_UNMOUNTED)) {
+                mGp.safMgr.loadSafFileNoUsbMountPoint();
+                notifyToMediaStatusChanged();
+            }
+        }
+    }
+
+    private void notifyToMediaStatusChanged() {
+        if (mGp.callbackStub != null) {
+            try {
+                mGp.callbackStub.cbMediaStatusChanged();
             } catch (RemoteException e) {
                 e.printStackTrace();
             }

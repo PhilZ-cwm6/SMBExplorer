@@ -54,12 +54,12 @@ public class SmbServerEditor {
         mDialog.setContentView(R.layout.smb_server_item_edit_dlg);
 
         LinearLayout ll_dlg_view = (LinearLayout) mDialog.findViewById(R.id.smb_server_item_edit_dlg_view);
-        ll_dlg_view.setBackgroundColor(mGp.themeColorList.dialog_msg_background_color);
+//        ll_dlg_view.setBackgroundColor(mGp.themeColorList.dialog_msg_background_color);
 
         LinearLayout title_view = (LinearLayout) mDialog.findViewById(R.id.smb_server_item_edit_dlg_title_view);
-        title_view.setBackgroundColor(mGp.themeColorList.dialog_title_background_color);
+        title_view.setBackgroundColor(mGp.themeColorList.title_background_color);
         TextView dlg_title = (TextView) mDialog.findViewById(R.id.smb_server_item_edit_dlg_title);
-        dlg_title.setTextColor(mGp.themeColorList.text_color_dialog_title);
+        dlg_title.setTextColor(mGp.themeColorList.title_text_color);
 
         CommonDialog.setDlgBoxSizeLimit(mDialog, true);
 
@@ -392,12 +392,12 @@ public class SmbServerEditor {
                     dialog.setContentView(R.layout.item_select_list_dlg);
 
                     LinearLayout ll_dlg_view = (LinearLayout) dialog.findViewById(R.id.item_select_list_dlg);
-                    ll_dlg_view.setBackgroundColor(mGp.themeColorList.dialog_msg_background_color);
+//                    ll_dlg_view.setBackgroundColor(mGp.themeColorList.dialog_msg_background_color);
 
                     LinearLayout title_view = (LinearLayout) dialog.findViewById(R.id.item_select_list_dlg_title_view);
-                    title_view.setBackgroundColor(mGp.themeColorList.dialog_title_background_color);
+                    title_view.setBackgroundColor(mGp.themeColorList.title_background_color);
                     TextView dlg_title = (TextView) dialog.findViewById(R.id.item_select_list_dlg_title);
-                    dlg_title.setTextColor(mGp.themeColorList.text_color_dialog_title);
+                    dlg_title.setTextColor(mGp.themeColorList.title_text_color);
                     dlg_title.setText("Select SMB share name");
                     TextView dlg_subtitle = (TextView) dialog.findViewById(R.id.item_select_list_dlg_subtitle);
                     dlg_subtitle.setVisibility(TextView.GONE);

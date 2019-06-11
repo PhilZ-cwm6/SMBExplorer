@@ -23,25 +23,18 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.database.Cursor;
-import android.media.MediaScannerConnection;
-import android.net.Uri;
 import android.net.wifi.WifiManager;
-import android.provider.MediaStore;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.CheckedTextView;
 import android.widget.Spinner;
 
-import com.sentaroh.android.Utilities.ThreadCtrl;
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
 
 import java.io.File;
@@ -49,7 +42,6 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.Enumeration;
 
 import static com.sentaroh.android.SMBExplorer.Constants.APPLICATION_TAG;

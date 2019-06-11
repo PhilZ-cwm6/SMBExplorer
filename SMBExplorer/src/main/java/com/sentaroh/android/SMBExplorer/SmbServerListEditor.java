@@ -104,12 +104,12 @@ public class SmbServerListEditor {
         mDialog.setContentView(R.layout.smb_server_list_edit_dlg);
 
         LinearLayout ll_dlg_view = (LinearLayout) mDialog.findViewById(R.id.smb_server_list_edit_dlg_view);
-        ll_dlg_view.setBackgroundColor(mGp.themeColorList.dialog_msg_background_color);
+//        ll_dlg_view.setBackgroundColor(mGp.themeColorList.dialog_msg_background_color);
 
         LinearLayout title_view = (LinearLayout) mDialog.findViewById(R.id.smb_server_list_edit_dlg_title_view);
-        title_view.setBackgroundColor(mGp.themeColorList.dialog_title_background_color);
+        title_view.setBackgroundColor(mGp.themeColorList.title_background_color);
         TextView dlg_title = (TextView) mDialog.findViewById(R.id.smb_server_list_edit_dlg_title);
-        dlg_title.setTextColor(mGp.themeColorList.text_color_dialog_title);
+        dlg_title.setTextColor(mGp.themeColorList.title_text_color);
 
         CommonDialog.setDlgBoxSizeLimit(mDialog, true);
 
@@ -490,12 +490,12 @@ public class SmbServerListEditor {
         dialog.setContentView(R.layout.single_item_input_dlg);
 
         LinearLayout ll_dlg_view = (LinearLayout) dialog.findViewById(R.id.single_item_input_dlg_view);
-        ll_dlg_view.setBackgroundColor(mGp.themeColorList.dialog_msg_background_color);
+//        ll_dlg_view.setBackgroundColor(mGp.themeColorList.dialog_msg_background_color);
 
         final LinearLayout title_view = (LinearLayout) dialog.findViewById(R.id.single_item_input_title_view);
         final TextView title = (TextView) dialog.findViewById(R.id.single_item_input_title);
-        title_view.setBackgroundColor(mGp.themeColorList.dialog_title_background_color);
-        title.setTextColor(mGp.themeColorList.text_color_dialog_title);
+        title_view.setBackgroundColor(mGp.themeColorList.title_background_color);
+        title.setTextColor(mGp.themeColorList.title_text_color);
 
 //		final TextView dlg_msg = (TextView) dialog.findViewById(R.id.single_item_input_msg);
         final TextView dlg_cmp = (TextView) dialog.findViewById(R.id.single_item_input_name);

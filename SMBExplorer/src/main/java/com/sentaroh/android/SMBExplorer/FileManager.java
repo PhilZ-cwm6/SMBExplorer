@@ -180,7 +180,7 @@ public class FileManager {
         mGp.remoteDialogMsg =(TextView)mGp.mRemoteView.findViewById(R.id.explorer_filelist_remote_dialog_msg);
         mGp.remoteDialogCloseBtn =(Button)mGp.mRemoteView.findViewById(R.id.explorer_filelist_remote_dialog_close);
 
-        mGp.dialogBackgroundColor=mGp.themeColorList.window_background_color_content;
+        mGp.dialogBackgroundColor=mGp.themeColorList.text_background_color;
 
         mGp.localFileListAdapter=new FileListAdapter(mActivity);
         mGp.localFileListView.setAdapter(mGp.localFileListAdapter);

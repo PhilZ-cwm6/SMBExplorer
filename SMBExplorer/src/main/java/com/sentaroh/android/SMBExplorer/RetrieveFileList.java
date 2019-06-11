@@ -116,7 +116,8 @@ public class RetrieveFileList extends Thread  {
 		defaultUEH = Thread.currentThread().getUncaughtExceptionHandler();
         Thread.currentThread().setUncaughtExceptionHandler(unCaughtExceptionHandler);
 
-        mJcifsAuth = new JcifsAuth(mSmbLevel, "", tuser, tpass, mSmbServerConfig.isSmbOptionIpcSigningEnforced(), mSmbServerConfig.isSmbOptionUseSMB2Negotiation());
+        if (mSmbLevel==JcifsAuth.JCIFS_FILE_SMB1) mJcifsAuth = new JcifsAuth(mSmbLevel, "", tuser, tpass);
+        else mJcifsAuth = new JcifsAuth(mSmbLevel, "", tuser, tpass, mSmbServerConfig.isSmbOptionIpcSigningEnforced(), mSmbServerConfig.isSmbOptionUseSMB2Negotiation());
 
 //        Log.v("","url="+remoteUrl);
 		String host_t1=remoteUrl.replace("smb://","").replaceAll("//", "/");

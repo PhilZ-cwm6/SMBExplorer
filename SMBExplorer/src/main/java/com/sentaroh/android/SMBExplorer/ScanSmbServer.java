@@ -72,12 +72,12 @@ public class ScanSmbServer {
         dialog.setContentView(R.layout.scan_remote_ntwk_dlg);
 
         LinearLayout ll_dlg_view = (LinearLayout) dialog.findViewById(R.id.scan_remote_ntwk_dlg_view);
-        ll_dlg_view.setBackgroundColor(mGp.themeColorList.dialog_msg_background_color);
+//        ll_dlg_view.setBackgroundColor(mGp.themeColorList.dialog_msg_background_color);
 
         final LinearLayout title_view = (LinearLayout) dialog.findViewById(R.id.scan_remote_ntwk_title_view);
         final TextView title = (TextView) dialog.findViewById(R.id.scan_remote_ntwk_title);
-        title_view.setBackgroundColor(mGp.themeColorList.dialog_title_background_color);
-        title.setTextColor(mGp.themeColorList.text_color_dialog_title);
+        title_view.setBackgroundColor(mGp.themeColorList.title_background_color);
+        title.setTextColor(mGp.themeColorList.title_text_color);
 
         final Button btn_scan = (Button) dialog.findViewById(R.id.scan_remote_ntwk_btn_ok);
         final Button btn_cancel = (Button) dialog.findViewById(R.id.scan_remote_ntwk_btn_cancel);

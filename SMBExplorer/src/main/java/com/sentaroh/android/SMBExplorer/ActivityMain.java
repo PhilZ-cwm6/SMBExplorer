@@ -24,31 +24,26 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
-import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.StrictMode;
-import android.os.SystemClock;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -62,19 +57,21 @@ import android.widget.ListView;
 import android.widget.TabHost;
 import android.widget.TabWidget;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.sentaroh.android.SMBExplorer.Log.LogFileListDialogFragment;
 import com.sentaroh.android.Utilities.ContextMenu.CustomContextMenu;
 import com.sentaroh.android.Utilities.Dialog.CommonDialog;
 import com.sentaroh.android.Utilities.NotifyEvent;
 import com.sentaroh.android.Utilities.SafManager;
+import com.sentaroh.android.Utilities.SystemInfo;
 import com.sentaroh.android.Utilities.ThemeUtil;
 import com.sentaroh.android.Utilities.Widget.CustomViewPager;
 import com.sentaroh.android.Utilities.Widget.CustomViewPagerAdapter;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.DatagramPacket;
@@ -85,6 +82,13 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
+
+import jcifsng212.CIFSContext;
+import jcifsng212.config.PropertyConfiguration;
+import jcifsng212.context.BaseContext;
+import jcifsng212.smb.NtlmPasswordAuthentication;
+import jcifsng212.smb.SmbFile;
 
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_PROFILE_NAME;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_LOCAL;
@@ -96,7 +100,6 @@ public class ActivityMain extends AppCompatActivity {
 
 	private GlobalParameters mGp=null;
     private CommonUtilities mUtil=null;
-    private UsbReceiver mUsbReceiver=null;
 	private boolean mIsApplicationTerminate = false;
 	private int restartStatus=0;
 	private Context mContext=null;
@@ -159,26 +162,50 @@ public class ActivityMain extends AppCompatActivity {
         Intent intmsg = new Intent(mContext, MainService.class);
         startService(intmsg);
 
-        mUsbReceiver=new UsbReceiver();
-        IntentFilter int_filter = new IntentFilter();
-        int_filter = new IntentFilter();
-        int_filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
-        int_filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
-        registerReceiver(mUsbReceiver, int_filter);
-
         mFileMgr.loadLocalFilelist(mGp.localBase,mGp.localDir, null);
         mFileMgr.setEmptyFolderView();
 
-//        startLogCat("/storage/emulated/0","logcat.txt", mTcLogCat);
+        ArrayList<String> sil= SystemInfo.listSystemInfo(mContext, mGp.safMgr);
+        mUtil.addDebugMsg(1,"I","System Information begin");
+        for(String item:sil) mUtil.addDebugMsg(1,"I","   "+item);
+        mUtil.addDebugMsg(1,"I","System Information end");
 
-//        long target=1534738805000L, master=1534738463738L;
-//        Log.v("","taget="+ StringUtil.convDateTimeTo_YearMonthDayHourMinSecMili(target));
-//        Log.v("","master="+ StringUtil.convDateTimeTo_YearMonthDayHourMinSecMili(master));
+        Thread th=new Thread() {
+            @Override
+            public void run() {
+                try {
+                    Properties prop=new Properties();
 
-//        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-//        intent.addCategory(Intent.CATEGORY_OPENABLE);
-//        intent.setType("*/*");
-//        startActivityForResult(intent, 1000);
+
+                    prop.setProperty("jcifs.smb.client.minVersion", "SMB202");
+                    prop.setProperty("jcifs.smb.client.maxVersion", "SMB300");
+
+                    BaseContext bc = new BaseContext(new PropertyConfiguration(prop));
+                    NtlmPasswordAuthentication creds = new NtlmPasswordAuthentication(bc, "","android","fh146746");
+                    CIFSContext ct = bc.withCredentials(creds);
+
+                    SmbFile in=new SmbFile("smb://192.168.200.128/E/unnamed.jpg", ct);
+                    SmbFile temp=new SmbFile("smb://192.168.200.128/F/BACKUP/SMBExplorer.work.tmp.jpg", ct);
+                    InputStream s_is=in.getInputStream();
+                    OutputStream s_os=temp.getOutputStream();
+                    byte[] buff=new byte[1024*1024];
+                    int rc=s_is.read(buff);
+                    s_os.write(buff, 0, rc);
+                    s_os.flush();
+                    s_os.close();
+
+                    SmbFile out=new SmbFile("smb://192.168.200.128/F/BACKUP/unnamed.jpg", ct);
+                    if (out.exists()) out.delete();
+                    Log.v("SMBExplorer","temp="+temp.getPath()+", out="+out.getPath());
+                    temp.renameTo(out);
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        };
+//        th.start();
+
     }
 
 	@Override
@@ -281,6 +308,16 @@ public class ActivityMain extends AppCompatActivity {
                 }
             });
         }
+        @Override
+        public void cbMediaStatusChanged() throws RemoteException {
+            mUtil.addDebugMsg(1, "I","cbMediaStatusChanged entered");
+            mUiHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    mFileMgr.updateLocalDirSpinner();
+                }
+            });
+        }
     };
 
     @Override
@@ -305,7 +342,6 @@ public class ActivityMain extends AppCompatActivity {
         if (!isUiEnabled()) stopService();
         closeService();
         unsetCallbackListener();
-        unregisterReceiver(mUsbReceiver);
 	}
 
     private void closeService() {
@@ -490,7 +526,7 @@ public class ActivityMain extends AppCompatActivity {
         mGp.tabWidget.setShowDividers(LinearLayout.SHOW_DIVIDER_NONE);
 
         LinearLayout main_view=(LinearLayout)findViewById(R.id.main_screen_view);
-        main_view.setBackgroundColor(Color.BLACK);//mGp.themeColorList.window_background_color_content);
+//        main_view.setBackgroundColor(Color.BLACK);//mGp.themeColorList.window_background_color_content);
 
         CustomTabContentView tabLocal = new CustomTabContentView(this, SMBEXPLORER_TAB_LOCAL);
         mGp.tabHost.addTab(mGp.tabHost.newTabSpec(SMBEXPLORER_TAB_LOCAL).setIndicator(tabLocal).setContent(android.R.id.tabcontent));
@@ -509,7 +545,7 @@ public class ActivityMain extends AppCompatActivity {
         mMainViewPager=(CustomViewPager)findViewById(R.id.main_screen_pager);
         mMainViewPagerAdapter=new CustomViewPagerAdapter(this, new View[]{mGp.mLocalView, mGp.mRemoteView});
 
-        mMainViewPager.setBackgroundColor(mGp.themeColorList.window_background_color_content);
+//        mMainViewPager.setBackgroundColor(mGp.themeColorList.window_background_color_content);
         mMainViewPager.setAdapter(mMainViewPagerAdapter);
         mMainViewPager.setOnPageChangeListener(new MainPageChangeListener());
         if (restartStatus==0) {
@@ -852,7 +888,7 @@ public class ActivityMain extends AppCompatActivity {
         List<StorageVolume>vol_list=sm.getStorageVolumes();
         StorageVolume sdcard_sv=null;
         for(StorageVolume item:vol_list) {
-            if (item.getDescription(mContext).startsWith("SD")) {
+            if (item.getDescription(mContext).contains("SD")) {
                 sdcard_sv=item;
                 break;
             }
@@ -1008,63 +1044,6 @@ public class ActivityMain extends AppCompatActivity {
             }
         }
     };
-
-    final private class UsbReceiver extends BroadcastReceiver {
-        @SuppressLint({"Wakelock", "NewApi"})
-        @Override
-        final public void onReceive(Context c, final Intent in) {
-            String action = in.getAction();
-            mUtil.addDebugMsg(1,"I","Usb device action="+in.getAction());
-            int delay=0;
-            Handler hndl=new Handler();
-            hndl.postDelayed(new Runnable(){
-                @Override
-                public void run() {
-                    if (action.equals(UsbManager.ACTION_USB_DEVICE_ATTACHED)) {
-//                        UsbManager um=(UsbManager)mContext.getSystemService(UsbManager.class);
-//                        HashMap<String, UsbDevice> dl=um.getDeviceList();
-//                        String kl="";
-//                        for(String name : dl.keySet()){
-//                            kl += name + "\n";
-//                            Log.v("","key="+name+", v="+dl.get(name));
-//                        }
-//                        Log.v("","kl="+kl);
-                        UsbDevice device = (UsbDevice) in.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                        mUtil.addDebugMsg(1,"I",device.toString());
-                        boolean success=false;
-                        for(int i=0;i<10;i++) {
-                            mGp.safMgr.loadSafFileNoUsbMountPoint();
-                            if (mGp.safMgr.isUsbMounted()) {
-                                mFileMgr.updateLocalDirSpinner();
-                                Toast.makeText(c,"USB flash memory attach process was successfull", Toast.LENGTH_SHORT).show();
-                                success=true;
-                                break;
-                            }
-                            SystemClock.sleep(500);
-                        }
-                        if (!success) {
-                            NotifyEvent ntfy=new NotifyEvent(mContext);
-                            ntfy.setListener(new NotifyEvent.NotifyEventListener() {
-                                @Override
-                                public void positiveResponse(Context context, Object[] objects) {
-                                    openUsbStorageSelector(REQUEST_CODE_STORAGE_ACCESS);
-                                }
-                                @Override
-                                public void negativeResponse(Context context, Object[] objects) {}
-                            });
-                            mGp.commonDlg.showCommonDialog(true,"I",
-                                    "USB Flashメモリーが取り付けられましたが認識できませんでした。ストレージ設定を表示しますか?","",ntfy);
-                        }
-                    } else {
-                        mGp.safMgr.loadSafFileNoUsbMountPoint();
-                        mFileMgr.updateLocalDirSpinner();
-                        Toast.makeText(c,"USB flash memory detach process was successfull", Toast.LENGTH_SHORT).show();
-                    }
-                    mUtil.addDebugMsg(1,"I","Usb list="+getRemovableStoragePaths(c,true));
-                }
-            },500);
-        }
-    }
 
     private String getRemovableStoragePaths(Context context, boolean debug) {
         String mpi="";

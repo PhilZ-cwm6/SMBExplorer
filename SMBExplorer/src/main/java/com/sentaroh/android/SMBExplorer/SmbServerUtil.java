@@ -303,7 +303,7 @@ public class SmbServerUtil {
         ne.setListener(new NotifyEvent.NotifyEventListener() {
             @Override
             public void positiveResponse(Context c,Object[] o) {
-                String fpath=(String)o[0];
+                String fpath=(String)o[0]+(String)o[1]+"/"+(String)o[2];
 
                 ArrayList<SmbServerConfig> tfl = createSmbServerConfigList(gp, true, fpath);
                 if (tfl!=null) {
@@ -318,7 +318,7 @@ public class SmbServerUtil {
             @Override
             public void negativeResponse(Context c,Object[] o) {}
         });
-        gp.commonDlg.fileOnlySelectWithCreate(curr_dir, "/SMBExplorer",file_name,"Select import file.",ne);
+        gp.commonDlg.fileSelectorFileOnlyWithCreate(true, curr_dir, "/SMBExplorer",file_name,"Select import file.",ne);
     }
 
     static public void exportSmbServerConfigListDlg(GlobalParameters gp, final String curr_dir, final String ifn) {
@@ -329,16 +329,16 @@ public class SmbServerUtil {
         ne.setListener(new NotifyEvent.NotifyEventListener() {
             @Override
             public void positiveResponse(Context c, Object[] o) {
-                String fpath=(String)o[0];
+                String fpath=(String)o[0]+(String)o[1]+"/"+(String)o[2];
                 String fd=fpath.substring(0,fpath.lastIndexOf("/"));
                 String fn=fpath.replace(fd+"/","");
-                writeSmbServerConfigList(gp, fd,fn);
+                writeSmbServerConfigList(gp, fd, fn);
             }
 
             @Override
             public void negativeResponse(Context c,Object[] o) {}
         });
-        gp.commonDlg.fileOnlySelectWithCreate(curr_dir, "/SMBExplorer",ifn,"Select export file.",ne);
+        gp.commonDlg.fileSelectorFileOnlyWithCreate(true, curr_dir, "/SMBExplorer",ifn,"Select export file.",ne);
     }
 
     static public void writeSmbServerConfigList(GlobalParameters gp, final String profile_dir, final String profile_filename) {

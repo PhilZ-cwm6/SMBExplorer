@@ -1,6 +1,7 @@
 package com.sentaroh.android.SMBExplorer;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -174,7 +175,8 @@ public class FileListAdapter extends BaseAdapter {
     }
 
 	private boolean enableListener=true;
-	
+
+	private ColorStateList mPrimaryTextColor=null;
 	@Override
     public View getView(int position, View convertView, ViewGroup parent) {
 		 	final ViewHolder holder;
@@ -195,7 +197,9 @@ public class FileListAdapter extends BaseAdapter {
             	holder.tv_modtime=(TextView)v.findViewById(R.id.file_list_time);
                 holder.tv_count=(TextView)v.findViewById(R.id.file_list_count);
             	holder.tv_select=(LinearLayout)v.findViewById(R.id.file_list_select_view);
-            	
+
+                mPrimaryTextColor=holder.tv_name.getTextColors();
+
             	v.setTag(holder); 
             } else {
          	   holder= (ViewHolder)v.getTag();
@@ -266,10 +270,10 @@ public class FileListAdapter extends BaseAdapter {
     		            	holder.tv_modtime.setTextColor(Color.GRAY);
                    		}
                    	} else {
-                   		holder.tv_name.setTextColor(mThemeColorList.text_color_primary);
-		            	holder.tv_size.setTextColor(mThemeColorList.text_color_primary);
-		            	holder.tv_moddate.setTextColor(mThemeColorList.text_color_primary);
-		            	holder.tv_modtime.setTextColor(mThemeColorList.text_color_primary);
+                   		holder.tv_name.setTextColor(mPrimaryTextColor);
+		            	holder.tv_size.setTextColor(mPrimaryTextColor);
+		            	holder.tv_moddate.setTextColor(mPrimaryTextColor);
+		            	holder.tv_modtime.setTextColor(mPrimaryTextColor);
                    	}
             	}
                	final int p = position;

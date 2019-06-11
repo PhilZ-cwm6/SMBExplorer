@@ -25,6 +25,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 import android.content.Context;
 import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.WifiLock;
 import android.os.Build;
@@ -32,6 +33,7 @@ import android.os.Handler;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.RemoteException;
+import android.provider.DocumentsContract;
 import android.webkit.MimeTypeMap;
 
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
@@ -150,7 +152,10 @@ public class FileIo extends Thread {
 	}
 
 	private JcifsAuth createJcifsAuth(String smb_level, String domain, String user, String pass, boolean ipc_sign_enforce, boolean use_smb2_nego) {
-	    return new JcifsAuth(Integer.parseInt(smb_level), domain, user, pass, ipc_sign_enforce, use_smb2_nego);
+	    JcifsAuth auth=null;
+        if (Integer.parseInt(smb_level)==JcifsAuth.JCIFS_FILE_SMB1) auth = new JcifsAuth(Integer.parseInt(smb_level), domain, user, pass);
+        else auth=new JcifsAuth(Integer.parseInt(smb_level), domain, user, pass, ipc_sign_enforce, use_smb2_nego);
+        return auth;
     }
 
 	private boolean fileOperation(FileIoLinkParm fiop) {
@@ -650,7 +655,7 @@ public class FileIo extends Thread {
 				if (ihf.getAttributes()<16384) { //no EA, copy was done
 					result=copyFileRemoteToRemote(ihf,ohf,fromUrl,toUrl,"Copying");
 					if (result) {
-						JcifsFile hfd=new JcifsFile(toUrl,smb_auth_from);
+						JcifsFile hfd=new JcifsFile(toUrl,smb_auth_to);
 						if (hfd.exists()) hfd.delete();
 						ohf.renameTo(hfd);
 					}
