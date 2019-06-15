@@ -248,6 +248,10 @@ public class GlobalParameters extends CommonGlobalParms{
 
     }
 
+    public void setUsbMediaPath(String path) {
+
+    }
+
     class JcifsNgLogWriter extends LoggerWriter {
         private LogUtil mLu =null;
         public JcifsNgLogWriter(LogUtil lu) {

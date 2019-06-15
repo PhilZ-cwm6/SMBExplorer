@@ -20,6 +20,7 @@
         android:visibility="visible" />
 
     <RelativeLayout
+        android:id="@+id/video_player_operation_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
 

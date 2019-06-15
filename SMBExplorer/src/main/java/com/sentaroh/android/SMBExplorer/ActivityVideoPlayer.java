@@ -26,6 +26,7 @@ import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.FileProvider;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -36,6 +37,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.MimeTypeMap;
 import android.widget.ImageButton;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
@@ -78,7 +80,7 @@ public class ActivityVideoPlayer extends FragmentActivity {
 	private int mCurrentSelectedPos=0;
 	private String mVideoFolder="";
 
-	private SurfaceView mSurfaceView=null, mThumnailView=null;;
+	private SurfaceView mSurfaceView=null;
 	private SurfaceHolder mSurfaceHolder=null;
 //	private Activity mActivity=null;
 
@@ -103,6 +105,7 @@ public class ActivityVideoPlayer extends FragmentActivity {
 	private ImageButton mIbForward=null, mIbBackward=null;
 //	private LinearLayout mLayoutTop=null;
 //	private LinearLayout mLayoutBottom=null;
+    private RelativeLayout mOperationView=null;
 
 
 	@Override
@@ -143,24 +146,6 @@ public class ActivityVideoPlayer extends FragmentActivity {
 			    mSurfaceView.setLayoutParams(layoutParams);
 			}
 	    }
-	    if (mThumnailView.isShown()) {
-			if (mThumnailBitmap!=null) {
-			    float video_Width = mThumnailBitmap.getWidth();
-			    float video_Height = mThumnailBitmap.getHeight();
-			    float ratio_width = dsz.x/video_Width;
-			    float ratio_height = dsz.y/video_Height;
-			    float aspectratio = video_Width/video_Height;
-			    android.view.ViewGroup.LayoutParams layoutParams = mThumnailView.getLayoutParams();
-			    if (ratio_width > ratio_height){
-				    layoutParams.width = (int) (dsz.y * aspectratio);
-				    layoutParams.height = dsz.y;
-			    }else{
-			    	layoutParams.width = dsz.x;
-			    	layoutParams.height = (int) (dsz.x / aspectratio);
-			    }
-			    mThumnailView.setLayoutParams(layoutParams);
-			}
-	    }
 	};
 
     @Override
@@ -190,7 +175,6 @@ public class ActivityVideoPlayer extends FragmentActivity {
 		mTvPlayPosition=(TextView)findViewById(R.id.video_player_dlg_played_time);
 		mTvEndPosition=(TextView)findViewById(R.id.video_player_dlg_played_endpos);
 		mSurfaceView=(SurfaceView)findViewById(R.id.video_player_dlg_video);
-		mThumnailView=(SurfaceView)findViewById(R.id.video_player_dlg_thumnail);
 		mIbPrevFile=(ImageButton) findViewById(R.id.video_player_dlg_prev);
 		mIbPlay=(ImageButton)findViewById(R.id.video_player_dlg_start_stop);
 		mIbNextFile=(ImageButton)findViewById(R.id.video_player_dlg_next);
@@ -203,6 +187,7 @@ public class ActivityVideoPlayer extends FragmentActivity {
 //		mLayoutTop=(LinearLayout)findViewById(R.id.video_player_dlg_top_panel);
 //		mLayoutBottom=(LinearLayout)findViewById(R.id.video_player_dlg_bottom_panel);
 
+        mOperationView=(RelativeLayout)findViewById(R.id.video_player_operation_view);
     };
 
     @Override
@@ -375,6 +360,14 @@ public class ActivityVideoPlayer extends FragmentActivity {
 					setVideoPlayerStatus(VIDEO_STATUS_PAUSING);
 				}
 			};
+        });
+
+        mSurfaceView.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mOperationView.getVisibility()==RelativeLayout.GONE) mOperationView.setVisibility(RelativeLayout.VISIBLE);
+                else mOperationView.setVisibility(RelativeLayout.GONE);
+            }
         });
 
 		mIbDeleteFile.setOnClickListener(new OnClickListener(){
@@ -883,7 +876,6 @@ public class ActivityVideoPlayer extends FragmentActivity {
 		if (isVideoPlayerStatusPlaying()) return;
 		mTcPlayer.setEnabled();
 		mSurfaceView.setVisibility(SurfaceView.VISIBLE);
-		mThumnailView.setVisibility(SurfaceView.INVISIBLE);
 		setCaptureBtnEnabled(true);
 		try {
 			mTvTitle.setText(mVideoFolder+fn);

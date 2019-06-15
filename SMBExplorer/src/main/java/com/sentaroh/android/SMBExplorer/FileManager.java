@@ -1531,6 +1531,7 @@ public class FileManager {
                 } else {
                     intent.setDataAndType(Uri.parse("file://"+item.getPath()+"/"+item.getName()), mt);
                 }
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 if (mt.startsWith("image")) intent.setClassName("com.sentaroh.android.TinyPictureViewer", "com.sentaroh.android.TinyPictureViewer.ActivityMain");
                 mContext.startActivity(intent);
             } catch(ActivityNotFoundException e) {

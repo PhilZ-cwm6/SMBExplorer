@@ -26,12 +26,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 import android.Manifest;
 import android.app.Activity;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -40,6 +43,7 @@ import android.os.RemoteException;
 import android.os.StrictMode;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
+import android.provider.DocumentsContract;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -65,6 +69,7 @@ import com.sentaroh.android.Utilities.NotifyEvent;
 import com.sentaroh.android.Utilities.SafManager;
 import com.sentaroh.android.Utilities.SystemInfo;
 import com.sentaroh.android.Utilities.ThemeUtil;
+import com.sentaroh.android.Utilities.Widget.CustomTabContentView;
 import com.sentaroh.android.Utilities.Widget.CustomViewPager;
 import com.sentaroh.android.Utilities.Widget.CustomViewPagerAdapter;
 
@@ -90,6 +95,7 @@ import jcifsng212.context.BaseContext;
 import jcifsng212.smb.NtlmPasswordAuthentication;
 import jcifsng212.smb.SmbFile;
 
+import static com.sentaroh.android.SMBExplorer.Constants.APPLICATION_TAG;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_PROFILE_NAME;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_LOCAL;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_POS_LOCAL;
@@ -169,46 +175,9 @@ public class ActivityMain extends AppCompatActivity {
         mUtil.addDebugMsg(1,"I","System Information begin");
         for(String item:sil) mUtil.addDebugMsg(1,"I","   "+item);
         mUtil.addDebugMsg(1,"I","System Information end");
-
-        Thread th=new Thread() {
-            @Override
-            public void run() {
-                try {
-                    Properties prop=new Properties();
-
-
-                    prop.setProperty("jcifs.smb.client.minVersion", "SMB202");
-                    prop.setProperty("jcifs.smb.client.maxVersion", "SMB300");
-
-                    BaseContext bc = new BaseContext(new PropertyConfiguration(prop));
-                    NtlmPasswordAuthentication creds = new NtlmPasswordAuthentication(bc, "","android","fh146746");
-                    CIFSContext ct = bc.withCredentials(creds);
-
-                    SmbFile in=new SmbFile("smb://192.168.200.128/E/unnamed.jpg", ct);
-                    SmbFile temp=new SmbFile("smb://192.168.200.128/F/BACKUP/SMBExplorer.work.tmp.jpg", ct);
-                    InputStream s_is=in.getInputStream();
-                    OutputStream s_os=temp.getOutputStream();
-                    byte[] buff=new byte[1024*1024];
-                    int rc=s_is.read(buff);
-                    s_os.write(buff, 0, rc);
-                    s_os.flush();
-                    s_os.close();
-
-                    SmbFile out=new SmbFile("smb://192.168.200.128/F/BACKUP/unnamed.jpg", ct);
-                    if (out.exists()) out.delete();
-                    Log.v("SMBExplorer","temp="+temp.getPath()+", out="+out.getPath());
-                    temp.renameTo(out);
-                } catch(Exception e) {
-                    e.printStackTrace();
-                }
-
-            }
-        };
-//        th.start();
-
     }
 
-	@Override
+    @Override
 	protected void onStart() {
 		super.onStart();
 		mUtil.addDebugMsg(1, "I", "onStart entered");
@@ -884,28 +853,33 @@ public class ActivityMain extends AppCompatActivity {
 
 	private void openSdcardStorageSelector(int request_code) {
         Intent intent = null;
-        StorageManager sm = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);
-        List<StorageVolume>vol_list=sm.getStorageVolumes();
-        StorageVolume sdcard_sv=null;
-        for(StorageVolume item:vol_list) {
-            if (item.getDescription(mContext).contains("SD")) {
-                sdcard_sv=item;
-                break;
+        if (Build.VERSION.SDK_INT>=24 && Build.VERSION.SDK_INT<=28) {
+            StorageManager sm = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);
+            List<StorageVolume>vol_list=sm.getStorageVolumes();
+            StorageVolume sdcard_sv=null;
+            for(StorageVolume item:vol_list) {
+                if (item.getDescription(mContext).contains("SD")) {
+                    sdcard_sv=item;
+                    break;
+                }
             }
-        }
-        if (sdcard_sv!=null) {
-            if (Build.VERSION.SDK_INT>=24 && Build.VERSION.SDK_INT<=28) {
-                if (sdcard_sv!=null) {
-                    intent=sdcard_sv.createAccessIntent(null);
+            if (sdcard_sv!=null) {
+                if (Build.VERSION.SDK_INT>=24 && Build.VERSION.SDK_INT<=28) {
+                    if (sdcard_sv!=null) {
+                        intent=sdcard_sv.createAccessIntent(null);
+                    } else {
+                        intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                    }
                 } else {
                     intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
                 }
+                startActivityForResult(intent, request_code);
             } else {
-                intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                mUtil.addDebugMsg(1,"I","SDCARD Storage not mounted");
             }
-            startActivityForResult(intent, request_code);
         } else {
-            mUtil.addDebugMsg(1,"I","SDCARD Storage not mounted");
+            intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+            startActivityForResult(intent, request_code);
         }
     }
 
