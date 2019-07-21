@@ -23,6 +23,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+
+import com.sentaroh.android.Utilities2.SafFile3;
+
 public class FileIoLinkParm {
 	FileIoLinkParm () {}
 	
@@ -32,6 +35,14 @@ public class FileIoLinkParm {
     private String toUrl="", toDomain="", toSmbLevel="3", toUser="", toPass="", toBaseUrl="", toFileName="";
     private boolean toSmbOptionIpcSignEnforce=true;
     private boolean toSmbOptionUseSMB2Negotiation=false;
+
+    private SafFile3 fromSafRoot=null;
+    private SafFile3 toSafRoot=null;
+
+    public void setToSafRoot(SafFile3 rt) {toSafRoot=rt;}
+    public SafFile3 getToSafRoot() {return toSafRoot;}
+    public void setFromSafRoot(SafFile3 rt) {fromSafRoot=rt;}
+    public SafFile3 getFromSafRoot() {return fromSafRoot;}
 
     public boolean isFromSmbOptionIpcSignEnforce() {return fromSmbOptionIpcSignEnforce;}
     public void setFromSmbOptionIpcSignEnforce(boolean p) {fromSmbOptionIpcSignEnforce=p;}

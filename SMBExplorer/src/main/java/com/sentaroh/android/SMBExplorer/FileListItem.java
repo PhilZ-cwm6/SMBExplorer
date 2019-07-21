@@ -2,8 +2,11 @@ package com.sentaroh.android.SMBExplorer;
 
 import android.util.Log;
 
-import com.sentaroh.android.Utilities.MiscUtil;
-import com.sentaroh.android.Utilities.StringUtil;
+import com.sentaroh.android.Utilities2.MiscUtil;
+import com.sentaroh.android.Utilities2.StringUtil;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -13,6 +16,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 public class FileListItem implements Cloneable, Serializable, Comparable<FileListItem>{
+    private static Logger log= LoggerFactory.getLogger(FileListItem.class);
 	private static final long serialVersionUID = 1L;
 	
 	private String fileName;
@@ -33,17 +37,14 @@ public class FileListItem implements Cloneable, Serializable, Comparable<FileLis
 	private boolean enableItem=true;
 	private boolean hasExtendedAttr=false;
 
-
-
 	private String fileSize="0", fileLastModDate="", fileLastModTime="";
 	
 	public void dump(String id) {
-		String did=(id+"            ").substring(0,12);
-		Log.v("FileListItem",did+"FileName="+fileName+", filePath="+filePath);
-		Log.v("FileListItem",did+"isDir="+isDir+", Length="+fileLength+
+		log.info("FileName="+fileName+", filePath="+filePath);
+        log.info("isDir="+isDir+", Length="+fileLength+
 				", lastModdate="+lastModdate+", isChecked="+isChecked+
 				", canRead="+canRead+",canWrite="+canWrite+", isHidden="+isHidden+", hasExtendedAttr="+hasExtendedAttr);
-		Log.v("FileListItem",did+"childListExpanded="+childListExpanded+
+        log.info("childListExpanded="+childListExpanded+
 				", listLevel=="+listLevel+", hideListItem="+hideListItem+
 				", subDirLoaded="+subDirLoaded+", subDirItemCount="+subDirItemCount+
 				", triState="+triState+", enableItem="+enableItem);
@@ -101,7 +102,12 @@ public class FileListItem implements Cloneable, Serializable, Comparable<FileLis
 
 	public boolean isDir(){return isDir;}
 	public long getLastModified(){return lastModdate;}
-	public void setLastModified(long p){lastModdate=p;}
+	public void setLastModified(long p){
+	    lastModdate=p;
+        String[] dt=StringUtil.convDateTimeTo_YearMonthDayHourMinSec(lastModdate).split(" ");
+        fileLastModDate=dt[0];
+        fileLastModTime=dt[1];
+	}
 	public boolean isChecked(){return isChecked;}
 	public void setChecked(boolean p){
 		isChecked=p;

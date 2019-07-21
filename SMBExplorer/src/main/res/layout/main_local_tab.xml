@@ -99,7 +99,7 @@
 	                android:layout_gravity="center_vertical" 
 	                android:textAppearance="?android:attr/textAppearanceSmall" />
 
-	            <com.sentaroh.android.Utilities.Widget.CustomTextView
+	            <com.sentaroh.android.Utilities2.Widget.NonWordwrapTextView
 	                android:id="@+id/explorer_filelist_local_filepath"
 	                android:layout_width="0dp"
 	                android:layout_height="wrap_content"
@@ -107,7 +107,6 @@
 	                android:layout_weight="1"
 	                android:ellipsize="start"
 	                android:gravity="center_vertical"
-	                android:maxLines="2"
 	                android:text=""
 	                android:textAppearance="?android:attr/textAppearanceSmall" />
 

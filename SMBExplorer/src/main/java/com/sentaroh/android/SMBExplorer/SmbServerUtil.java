@@ -3,15 +3,18 @@ package com.sentaroh.android.SMBExplorer;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.net.Uri;
 import android.os.Handler;
 import android.util.Xml;
 
-import com.sentaroh.android.Utilities.Base64Compat;
-import com.sentaroh.android.Utilities.Dialog.CommonDialog;
-import com.sentaroh.android.Utilities.EncryptUtil;
-import com.sentaroh.android.Utilities.NotifyEvent;
-import com.sentaroh.android.Utilities.ThreadCtrl;
-import com.sentaroh.android.Utilities.Widget.CustomSpinnerAdapter;
+import com.sentaroh.android.Utilities2.Base64Compat;
+import com.sentaroh.android.Utilities2.Dialog.CommonDialog;
+import com.sentaroh.android.Utilities2.Dialog.CommonFileSelector2;
+import com.sentaroh.android.Utilities2.EncryptUtil;
+import com.sentaroh.android.Utilities2.NotifyEvent;
+import com.sentaroh.android.Utilities2.SafFile3;
+import com.sentaroh.android.Utilities2.ThreadCtrl;
+import com.sentaroh.android.Utilities2.Widget.CustomSpinnerAdapter;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -23,7 +26,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -60,8 +62,8 @@ public class SmbServerUtil {
         return result;
     }
 
-    static public void saveSmbServerConfigList(GlobalParameters gp) {
-        saveSmbServerConfigList(gp, false, "", "");
+    static public void saveSmbServerConfigList(Context c, GlobalParameters gp) {
+        saveSmbServerConfigList(c, gp, false, null);
     }
 
     private static final String CONFIG_TAG_CONFIG="config_list";
@@ -80,7 +82,7 @@ public class SmbServerUtil {
     private static final String CONFIG_TAG_SERVER_SMB_OPTION_IPC_SIGN_ENFORCE ="smb_option_ipc_sign_enforce";
     private static final String CONFIG_TAG_SERVER_SMB_OPTION_USE_SMB2_NEGOTIATION ="smb_option_use_smb2_negotiation";
 
-    static public ArrayList<SmbServerConfig> createSmbServerConfigList(GlobalParameters gp, boolean sdcard, String fp) {
+    static public ArrayList<SmbServerConfig> createSmbServerConfigList(Context c, GlobalParameters gp, boolean sdcard, final Uri file_uri) {
 
         ArrayList<SmbServerConfig> rem = new ArrayList<SmbServerConfig>();
         boolean init_smb_list=false;
@@ -89,15 +91,16 @@ public class SmbServerUtil {
             String priv_key=null;
             EncryptUtil.CipherParms cp_int=null;
             if (sdcard) {
-                File sf = new File(fp);
+                SafFile3 sf = new SafFile3(c, file_uri);
                 if (sf.exists()) {
-                    fis = new FileInputStream(sf);
+                    fis = sf.getInputStream();
                 } else {
-                    gp.commonDlg.showCommonDialog(false,"E", String.format(gp.context.getString(R.string.msgs_local_file_list_create_nfound), fp),"",null);
+                    gp.commonDlg.showCommonDialog(false,"E",
+                            String.format(gp.context.getString(R.string.msgs_local_file_list_create_file_not_found), file_uri.getPath()),"",null);
                     init_smb_list=true;
                 }
             } else {
-                priv_key=KeyStoreUtil.getGeneratedPasswordNewVersion(gp.context, SMBEXPLORER_KEY_STORE_ALIAS);
+                priv_key=KeyStoreUtil2.getGeneratedPassword(gp.context, SMBEXPLORER_KEY_STORE_ALIAS);
                 cp_int= EncryptUtil.initDecryptEnv(priv_key);
                 fis = gp.context.openFileInput(SMBEXPLORER_PROFILE_NAME);
             }
@@ -203,7 +206,7 @@ public class SmbServerUtil {
         return smb_item;
     }
 
-    static public void saveSmbServerConfigList(GlobalParameters gp, boolean sdcard, String fd, String fn) {
+    static public void saveSmbServerConfigList(Context c, GlobalParameters gp, boolean sdcard, final Uri file_uri) {
         PrintWriter pw;
         BufferedWriter bw = null;
         try {
@@ -211,11 +214,13 @@ public class SmbServerUtil {
             EncryptUtil.CipherParms cp_int=null;
             OutputStream profile_out=null;
             if (sdcard) {
-                File lf = new File(fd);
-                if (!lf.exists()) lf.mkdir();
-                profile_out=new FileOutputStream(new File(fd+"/"+fn));
+                SafFile3 lf = new SafFile3(c, file_uri);
+                SafFile3 df=lf.getParent();
+                if (!df.exists()) df.mkdirs();
+                if (!lf.exists()) lf.createNewFile();
+                profile_out=lf.getOutputStream();
             } else {
-                priv_key=KeyStoreUtil.getGeneratedPasswordNewVersion(gp.context, SMBEXPLORER_KEY_STORE_ALIAS);
+                priv_key=KeyStoreUtil2.getGeneratedPassword(gp.context, SMBEXPLORER_KEY_STORE_ALIAS);
                 cp_int= EncryptUtil.initDecryptEnv(priv_key);
 
                 profile_out=gp.context.openFileOutput(SMBEXPLORER_PROFILE_NAME, MODE_PRIVATE);
@@ -268,9 +273,10 @@ public class SmbServerUtil {
                     sw.flush();
                     sw.close();
                     pw = new PrintWriter(new OutputStreamWriter(profile_out, "UTF-8"));
-                    String prof=sw.toString().replaceAll("<"+CONFIG_TAG_CONFIG, "\n<"+CONFIG_TAG_CONFIG)
-                            .replaceAll("</"+CONFIG_TAG_CONFIG, "\n</"+CONFIG_TAG_CONFIG)
-                            .replaceAll("<"+CONFIG_TAG_SERVER,"\n     <"+CONFIG_TAG_SERVER);
+//                    String prof=sw.toString().replaceAll("<"+CONFIG_TAG_CONFIG, "\n<"+CONFIG_TAG_CONFIG)
+//                            .replaceAll("</"+CONFIG_TAG_CONFIG, "\n</"+CONFIG_TAG_CONFIG)
+//                            .replaceAll("<"+CONFIG_TAG_SERVER,"\n     <"+CONFIG_TAG_SERVER);
+                    String prof=sw.toString();
                     pw.println(prof);
                     pw.flush();
                     pw.close();
@@ -294,7 +300,7 @@ public class SmbServerUtil {
         }
     }
 
-    static public void importSmbServerConfigDlg(GlobalParameters gp, final String curr_dir, String file_name) {
+    static public void importSmbServerConfigDlg(ActivityMain activity, GlobalParameters gp, final String curr_dir, String file_name) {
 
         gp.mUtil.addDebugMsg(1,"I","Import profile dlg.");
 
@@ -303,14 +309,14 @@ public class SmbServerUtil {
         ne.setListener(new NotifyEvent.NotifyEventListener() {
             @Override
             public void positiveResponse(Context c,Object[] o) {
-                String fpath=(String)o[0]+(String)o[1]+"/"+(String)o[2];
+                Uri file_uri=(Uri)o[0];
 
-                ArrayList<SmbServerConfig> tfl = createSmbServerConfigList(gp, true, fpath);
+                ArrayList<SmbServerConfig> tfl = createSmbServerConfigList(activity.getApplicationContext(), gp, true, file_uri);
                 if (tfl!=null) {
                     gp.smbConfigList =tfl;
-                    saveSmbServerConfigList(gp);
+                    saveSmbServerConfigList(activity.getApplicationContext(), gp);
                     updateSmbShareSpinner(gp);
-                    gp.commonDlg.showCommonDialog(false,"I",gp.context.getString(R.string.msgs_select_import_dlg_success), fpath, null);
+                    gp.commonDlg.showCommonDialog(false,"I",gp.context.getString(R.string.msgs_select_import_dlg_success), "", null);
                 }
 
             }
@@ -318,10 +324,16 @@ public class SmbServerUtil {
             @Override
             public void negativeResponse(Context c,Object[] o) {}
         });
-        gp.commonDlg.fileSelectorFileOnlyWithCreate(true, curr_dir, "/SMBExplorer",file_name,"Select import file.",ne);
+        boolean include_root=false;
+        boolean scoped_storage_mode=gp.safMgr.isScopedStorageMode();
+        CommonFileSelector2 fsdf=
+                CommonFileSelector2.newInstance(scoped_storage_mode, true, false, CommonFileSelector2.DIALOG_SELECT_CATEGORY_FILE,
+                        true, true, curr_dir, "/SMBExplorer", file_name, "Select import file.");
+        fsdf.showDialog(false, activity.getSupportFragmentManager(), fsdf, ne);
+//        gp.commonDlg.fileSelectorFileOnlyWithCreate(true, curr_dir, "/SMBExplorer",file_name,"Select import file.",ne);
     }
 
-    static public void exportSmbServerConfigListDlg(GlobalParameters gp, final String curr_dir, final String ifn) {
+    static public void exportSmbServerConfigListDlg(ActivityMain activity, GlobalParameters gp, final String curr_dir, final String ifn) {
         gp.mUtil.addDebugMsg(1,"I","Export profile.");
 
         NotifyEvent ne=new NotifyEvent(gp.context);
@@ -329,31 +341,35 @@ public class SmbServerUtil {
         ne.setListener(new NotifyEvent.NotifyEventListener() {
             @Override
             public void positiveResponse(Context c, Object[] o) {
-                String fpath=(String)o[0]+(String)o[1]+"/"+(String)o[2];
-                String fd=fpath.substring(0,fpath.lastIndexOf("/"));
-                String fn=fpath.replace(fd+"/","");
-                writeSmbServerConfigList(gp, fd, fn);
+                Uri file_uri=(Uri)o[0];
+                writeSmbServerConfigList(activity.getApplicationContext(), gp, file_uri);
             }
 
             @Override
             public void negativeResponse(Context c,Object[] o) {}
         });
-        gp.commonDlg.fileSelectorFileOnlyWithCreate(true, curr_dir, "/SMBExplorer",ifn,"Select export file.",ne);
+        boolean scoped_storage_mode=gp.safMgr.isScopedStorageMode();
+        CommonFileSelector2 fsdf=
+                CommonFileSelector2.newInstance(scoped_storage_mode, true, false, CommonFileSelector2.DIALOG_SELECT_CATEGORY_FILE,
+                        true, curr_dir, "/SMBExplorer", ifn, "Select import file.");
+        fsdf.showDialog(false, activity.getSupportFragmentManager(), fsdf, ne);
+//        gp.commonDlg.fileSelectorFileOnlyWithCreate(true, curr_dir, "/SMBExplorer",ifn,"Select export file.",ne);
     }
 
-    static public void writeSmbServerConfigList(GlobalParameters gp, final String profile_dir, final String profile_filename) {
+    static public void writeSmbServerConfigList(Context c, GlobalParameters gp, final Uri file_uri) {
         gp.mUtil.addDebugMsg(1,"I","Export profile to file");
 
-        File lf = new File(profile_dir + "/" + profile_filename);
+        SafFile3 lf = new SafFile3(c, file_uri);
+
         if (lf.exists()) {
             NotifyEvent ne=new NotifyEvent(gp.context);
             // set commonDialog response
             ne.setListener(new NotifyEvent.NotifyEventListener() {
                 @Override
                 public void positiveResponse(Context c,Object[] o) {
-                    saveSmbServerConfigList(gp, true,profile_dir,profile_filename);
+                    saveSmbServerConfigList(c, gp, true, file_uri);
                     gp.commonDlg.showCommonDialog(false,"I",gp.context.getString(R.string.msgs_select_export_dlg_success),
-                            profile_dir+"/"+profile_filename, null);
+                            file_uri.getPath(), null);
                 }
 
                 @Override
@@ -361,12 +377,12 @@ public class SmbServerUtil {
             });
             gp.commonDlg.showCommonDialog(true,"I",
                     String.format(gp.context.getString(R.string.msgs_select_export_dlg_override),
-                            profile_dir+"/"+profile_filename),"",ne);
+                            file_uri.getPath()),"",ne);
             return;
         } else {
-            saveSmbServerConfigList(gp, true,profile_dir,profile_filename);
+            saveSmbServerConfigList(c, gp, true, file_uri);
             gp.commonDlg.showCommonDialog(false,"I", gp.context.getString(R.string.msgs_select_export_dlg_success),
-                    profile_dir+"/"+profile_filename, null);
+                    file_uri.getPath(), null);
         }
     }
 

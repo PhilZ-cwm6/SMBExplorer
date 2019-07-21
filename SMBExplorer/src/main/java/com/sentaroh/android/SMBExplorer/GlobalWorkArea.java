@@ -11,4 +11,8 @@ public class GlobalWorkArea {
         }
         return gp;
     }
+
+    static public GlobalParameters getAllocatedGlobalParameters() {
+        return gp;
+    }
 }

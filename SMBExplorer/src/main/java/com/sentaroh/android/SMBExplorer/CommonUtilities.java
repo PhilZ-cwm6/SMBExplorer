@@ -59,7 +59,7 @@ public final class CommonUtilities {
    	
 	public CommonUtilities(Context c, String li, GlobalParameters gp) {
 		mContext=c;// ContextはApplicationContext
-		mLog=new LogUtil(c, li, gp);
+		mLog=new LogUtil(c, li);
 		mLogIdent=li;
         mGp=gp;
 	}
@@ -130,13 +130,17 @@ public final class CommonUtilities {
 	final public boolean isLogFileExists() {
 		boolean result = false;
 		result=mLog.isLogFileExists();
-		if (mGp.settingDebugLevel>=3) addDebugMsg(3,"I","Log file exists="+result);
+		addDebugMsg(2,"I","Log file exists="+result);
 		return result;
 	};
 
 	final public String getLogFilePath() {
 		return mLog.getLogFilePath();
 	};
+
+    final public int getLogLevel() {
+        return mLog.getLogLevel();
+    };
 
     public static String getIfIpAddress(String if_name) {
         String result = "";

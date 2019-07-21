@@ -33,9 +33,11 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 
-import com.sentaroh.android.Utilities.LocalMountPoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ActivitySetting extends PreferenceActivity {
+    private static Logger log= LoggerFactory.getLogger(ActivitySetting.class);
     private static Context mContext=null;
     private static PreferenceFragment mPrefFrag=null;
 
@@ -43,7 +45,7 @@ public class ActivitySetting extends PreferenceActivity {
 
     private static GlobalParameters mGp=null;
 
-    private CommonUtilities mUtil=null;
+//    private CommonUtilities mUtil=null;
 
 //	private GlobalParameters mGp=null;
 
@@ -59,8 +61,7 @@ public class ActivitySetting extends PreferenceActivity {
 //        setTheme(mGp.applicationTheme);
         super.onCreate(savedInstanceState);
         mPrefActivity=this;
-        if (mUtil==null) mUtil=new CommonUtilities(this, "SettingsActivity", mGp);
-        if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
+        log.debug(CommonUtilities.getExecutedMethodName()+" entered");
 //        if (mGp.settingFixDeviceOrientationToPortrait) setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 //        else setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
     }
@@ -68,19 +69,19 @@ public class ActivitySetting extends PreferenceActivity {
     @Override
     public void onStart(){
         super.onStart();
-        if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
+        log.debug(CommonUtilities.getExecutedMethodName()+" entered");
     };
 
     @Override
     public void onResume(){
         super.onResume();
-        if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
+        log.debug(CommonUtilities.getExecutedMethodName()+" entered");
 //		setTitle(R.string.settings_main_title);
     };
 
     @Override
     public void onBuildHeaders(List<Header> target) {
-        if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
+        log.debug(CommonUtilities.getExecutedMethodName()+" entered");
         loadHeadersFromResource(R.xml.settings_frag, target);
     };
 
@@ -89,150 +90,43 @@ public class ActivitySetting extends PreferenceActivity {
         mContext=this;
         mGp=GlobalWorkArea.getGlobalParameters(mContext);
 //    	mPrefActivity=this;
-        mUtil=new CommonUtilities(this, "SettingsActivity", mGp);
-        if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
+        log.debug(CommonUtilities.getExecutedMethodName()+" entered");
         return true;
     };
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
+        log.debug(CommonUtilities.getExecutedMethodName()+" entered");
     };
 
     @Override
     final public void onStop() {
         super.onStop();
-        if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
+        log.debug(CommonUtilities.getExecutedMethodName()+" entered");
     };
 
     @Override
     final public void onDestroy() {
         super.onDestroy();
-        if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
-    };
-
-    private static void checkSettingValue(CommonUtilities ut, SharedPreferences shared_pref, String key_string) {
-        if (!checkLogSettings(ut, mPrefFrag.findPreference(key_string),shared_pref, key_string,mContext))
-            if (!checkMiscSettings(ut, mPrefFrag.findPreference(key_string),shared_pref, key_string,mContext))
-                checkOtherSettings(ut, mPrefFrag.findPreference(key_string),shared_pref, key_string,mContext);
-    };
-
-    private static boolean checkMiscSettings(CommonUtilities ut,
-                                             Preference pref_key, SharedPreferences shared_pref, String key_string, Context c) {
-        boolean isChecked = false;
-
-        if (key_string.equals(c.getString(R.string.settings_exit_clean))) {
-            isChecked=true;
-            if (shared_pref.getBoolean(key_string, true)) {
-                pref_key
-                        .setSummary(c.getString(R.string.settings_exit_clean_summary_ena));
-            } else {
-                pref_key
-                        .setSummary(c.getString(R.string.settings_exit_clean_summary_dis));
-            }
-        }
-
-        return isChecked;
-    };
-
-    private static boolean checkLogSettings(CommonUtilities ut,
-                                            Preference pref_key, SharedPreferences shared_pref, String key_string, Context c) {
-        boolean isChecked = false;
-
-        if (key_string.equals(c.getString(R.string.settings_log_option))) {
-            isChecked=true;
-        } else if (key_string.equals(c.getString(R.string.settings_put_logcat_option))) {
-            isChecked=true;
-        } else if (key_string.equals(c.getString(R.string.settings_log_level))) {
-            isChecked=true;
-            String[] wl_label= c.getResources().getStringArray(R.array.settings_log_level_list_entries);
-            String sum_msg=wl_label[Integer.parseInt(shared_pref.getString(key_string, "0"))];
-            pref_key.setSummary(sum_msg);
-        } else if (key_string.equals(c.getString(R.string.settings_log_file_max_count))) {
-            isChecked=true;
-            pref_key.setSummary(String.format(c.getString(R.string.settings_log_file_max_count_summary),
-                    shared_pref.getString(key_string, "10")));
-        }
-
-        return isChecked;
-    };
-
-    private static boolean checkOtherSettings(CommonUtilities ut,
-                                              Preference pref_key, SharedPreferences shared_pref, String key_string, Context c) {
-        boolean isChecked = true;
-        if (pref_key!=null) {
-            pref_key.setSummary(
-                    c.getString(R.string.settings_default_current_setting)+
-                            shared_pref.getString(key_string, "0"));
-        } else {
-            if (mGp.settingDebugLevel>0) ut.addDebugMsg(1, "I", "checkOtherSettings Key not found key="+key_string);
-        }
-        return isChecked;
-    };
-
-    public static class SettingsLog extends PreferenceFragment {
-        private SharedPreferences.OnSharedPreferenceChangeListener listenerAfterHc =
-                new SharedPreferences.OnSharedPreferenceChangeListener() {
-                    public void onSharedPreferenceChanged(SharedPreferences shared_pref, String key_string) {
-                        checkSettingValue(mUtil, shared_pref, key_string);
-                    }
-                };
-        private CommonUtilities mUtil=null;
-        @Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            mPrefFrag=this;
-            mUtil=new CommonUtilities(mContext, "SettingsLog", mGp);
-            if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
-
-            addPreferencesFromResource(R.xml.settings_frag_log);
-
-            SharedPreferences shared_pref = PreferenceManager.getDefaultSharedPreferences(mContext);
-
-            if (!LocalMountPoint.isExternalStorageAvailable()) {
-                findPreference(getString(R.string.settings_log_dir))
-                        .setEnabled(false);
-            }
-
-            checkSettingValue(mUtil, shared_pref,getString(R.string.settings_log_option));
-            checkSettingValue(mUtil, shared_pref,getString(R.string.settings_put_logcat_option));
-            checkSettingValue(mUtil, shared_pref,getString(R.string.settings_log_file_max_count));
-            checkSettingValue(mUtil, shared_pref,getString(R.string.settings_log_dir));
-            checkSettingValue(mUtil, shared_pref,getString(R.string.settings_log_level));
-        };
-
-        @Override
-        public void onStart() {
-            super.onStart();
-            if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
-            getPreferenceScreen().getSharedPreferences()
-                    .registerOnSharedPreferenceChangeListener(listenerAfterHc);
-            getActivity().setTitle(R.string.settings_log_title);
-        };
-        @Override
-        public void onStop() {
-            super.onStop();
-            if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
-            getPreferenceScreen().getSharedPreferences()
-                    .unregisterOnSharedPreferenceChangeListener(listenerAfterHc);
-        };
+        log.debug(CommonUtilities.getExecutedMethodName()+" entered");
     };
 
     public static class SettingsMisc extends PreferenceFragment {
+        private static Logger log= LoggerFactory.getLogger(SettingsMisc.class);
         private SharedPreferences.OnSharedPreferenceChangeListener listenerAfterHc =
                 new SharedPreferences.OnSharedPreferenceChangeListener() {
                     public void onSharedPreferenceChanged(SharedPreferences shared_pref, String key_string) {
-                        checkSettingValue(mUtil, shared_pref, key_string);
+                        checkSettings(shared_pref, key_string);
                     }
                 };
-        private CommonUtilities mUtil=null;
+
+//        private CommonUtilities mUtil=null;
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             mPrefFrag=this;
-            mUtil=new CommonUtilities(mContext, "SettingsMisc", mGp);
-            if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
+            log.debug(CommonUtilities.getExecutedMethodName()+" entered");
 
             addPreferencesFromResource(R.xml.settings_frag_misc);
 
@@ -240,23 +134,36 @@ public class ActivitySetting extends PreferenceActivity {
 
             shared_pref.edit().putBoolean(getString(R.string.settings_exit_clean),true).commit();
             findPreference(getString(R.string.settings_exit_clean).toString()).setEnabled(false);
-            checkSettingValue(mUtil, shared_pref,getString(R.string.settings_exit_clean));
+            checkSettings(shared_pref, getString(R.string.settings_exit_clean));
+        };
+
+        private boolean checkSettings(SharedPreferences shared_pref, String key_string) {
+            boolean isChecked = false;
+            Preference pref_key=mPrefFrag.findPreference(key_string);
+            if (key_string.equals(getString(R.string.settings_exit_clean))) {
+                isChecked=true;
+                if (shared_pref.getBoolean(key_string, true)) {
+                    pref_key.setSummary(getString(R.string.settings_exit_clean_summary_ena));
+                } else {
+                    pref_key.setSummary(getString(R.string.settings_exit_clean_summary_dis));
+                }
+            }
+
+            return isChecked;
         };
 
         @Override
         public void onStart() {
             super.onStart();
-            if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
-            getPreferenceScreen().getSharedPreferences()
-                    .registerOnSharedPreferenceChangeListener(listenerAfterHc);
+            log.debug(CommonUtilities.getExecutedMethodName()+" entered");
+            getPreferenceScreen().getSharedPreferences().registerOnSharedPreferenceChangeListener(listenerAfterHc);
             getActivity().setTitle(R.string.settings_misc_title);
         };
         @Override
         public void onStop() {
             super.onStop();
-            if (mGp.settingDebugLevel>0) mUtil.addDebugMsg(1, "I", CommonUtilities.getExecutedMethodName()+" entered");
-            getPreferenceScreen().getSharedPreferences()
-                    .unregisterOnSharedPreferenceChangeListener(listenerAfterHc);
+            log.debug(CommonUtilities.getExecutedMethodName()+" entered");
+            getPreferenceScreen().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(listenerAfterHc);
         };
     };
 

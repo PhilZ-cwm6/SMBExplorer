@@ -5,7 +5,7 @@
 
    	<string name="msgs_delete_file_dirs_confirm">Delete following dirs/files?</string>
    	<string name="msgs_local_file_list_create_error">Error occurred during local file list creation.</string>
-	<string name="msgs_local_file_list_create_nfound">Specified file %s was not found.</string>
+	<string name="msgs_local_file_list_create_file_not_found">Specified file %s was not found.</string>
     <string name="msgs_remote_file_list_create_error">Error occurred during remote file list creation.</string>
     <string name="msgs_terminate_confirm">Terminate application.</string>
    	<string name="msgs_select_import_dlg_success">Import was successful</string>
@@ -29,5 +29,7 @@
     <string name="msgs_main_notification_title">SMBExplorer</string>
     <string name="msgs_main_notification_message">File process is working in the background.</string>
     <string name="msgs_main_notification_end_message">File process was ended in the background.</string>
+
+    <string name="msgs_storage_permission_title">Permission to use storage</string>
 
 </resources>

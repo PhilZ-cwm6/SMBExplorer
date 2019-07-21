@@ -15,10 +15,10 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.sentaroh.android.Utilities.Dialog.CommonDialog;
-import com.sentaroh.android.Utilities.Dialog.DialogBackKeyListener;
-import com.sentaroh.android.Utilities.NotifyEvent;
-import com.sentaroh.android.Utilities.ThreadCtrl;
+import com.sentaroh.android.Utilities2.Dialog.CommonDialog;
+import com.sentaroh.android.Utilities2.Dialog.DialogBackKeyListener;
+import com.sentaroh.android.Utilities2.NotifyEvent;
+import com.sentaroh.android.Utilities2.ThreadCtrl;
 import com.sentaroh.jcifs.JcifsAuth;
 import com.sentaroh.jcifs.JcifsException;
 import com.sentaroh.jcifs.JcifsFile;

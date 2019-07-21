@@ -2,6 +2,7 @@ package com.sentaroh.android.SMBExplorer;
 
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
+import android.content.ContentProviderClient;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -13,7 +14,6 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.RemoteException;
 import android.provider.MediaStore;
-import android.support.v4.content.FileProvider;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -29,17 +29,22 @@ import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import com.sentaroh.android.Utilities.ContextMenu.CustomContextMenu;
-import com.sentaroh.android.Utilities.ContextMenu.CustomContextMenuItem;
-import com.sentaroh.android.Utilities.Dialog.CommonDialog;
-import com.sentaroh.android.Utilities.LocalMountPoint;
-import com.sentaroh.android.Utilities.NotifyEvent;
-import com.sentaroh.android.Utilities.SafFile;
-import com.sentaroh.android.Utilities.ThreadCtrl;
-import com.sentaroh.android.Utilities.Widget.CustomSpinnerAdapter;
-import com.sentaroh.android.Utilities.Widget.CustomTextView;
+import androidx.core.content.FileProvider;
+
+import com.sentaroh.android.Utilities2.ContextMenu.CustomContextMenu;
+import com.sentaroh.android.Utilities2.ContextMenu.CustomContextMenuItem;
+import com.sentaroh.android.Utilities2.Dialog.CommonDialog;
+import com.sentaroh.android.Utilities2.NotifyEvent;
+import com.sentaroh.android.Utilities2.SafFile3;
+import com.sentaroh.android.Utilities2.SafStorage3;
+import com.sentaroh.android.Utilities2.ThreadCtrl;
+import com.sentaroh.android.Utilities2.Widget.CustomSpinnerAdapter;
+import com.sentaroh.android.Utilities2.Widget.NonWordwrapTextView;
 import com.sentaroh.jcifs.JcifsException;
 import com.sentaroh.jcifs.JcifsFile;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -69,7 +74,7 @@ import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_POS_REM
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_REMOTE;
 
 public class FileManager {
-
+    private static Logger log= LoggerFactory.getLogger(FileManager.class);
     private GlobalParameters mGp;
     private Context mContext;
     private ActivityMain mActivity;
@@ -152,11 +157,11 @@ public class FileManager {
         mGp.remoteFileListView=(ListView)mGp.mRemoteView.findViewById(R.id.explorer_filelist_remote_tab_listview);
         mGp.localFileListEmptyView=(TextView)mGp.mLocalView.findViewById(R.id.explorer_filelist_local_empty_view);
         mGp.remoteFileListEmptyView=(TextView)mGp.mRemoteView.findViewById(R.id.explorer_filelist_remote_empty_view);
-        mGp.localFileListPath=(CustomTextView)mGp.mLocalView.findViewById(R.id.explorer_filelist_local_filepath);
+        mGp.localFileListPath=(NonWordwrapTextView)mGp.mLocalView.findViewById(R.id.explorer_filelist_local_filepath);
         mGp.localFileListUpBtn=(Button)mGp.mLocalView.findViewById(R.id.explorer_filelist_local_up_btn);
         mGp.localFileListTopBtn=(Button)mGp.mLocalView.findViewById(R.id.explorer_filelist_local_top_btn);
 
-        mGp.remoteFileListPath=(CustomTextView)mGp.mRemoteView.findViewById(R.id.explorer_filelist_remote_filepath);
+        mGp.remoteFileListPath=(NonWordwrapTextView)mGp.mRemoteView.findViewById(R.id.explorer_filelist_remote_filepath);
         mGp.remoteFileListUpBtn=(Button)mGp.mRemoteView.findViewById(R.id.explorer_filelist_remote_up_btn);
         mGp.remoteFileListTopBtn=(Button)mGp.mRemoteView.findViewById(R.id.explorer_filelist_remote_top_btn);
         mGp.remoteFileListUpBtn.setEnabled(false);
@@ -188,50 +193,53 @@ public class FileManager {
         mGp.remoteFileListAdapter=new FileListAdapter(mActivity);
         mGp.remoteFileListView.setAdapter(mGp.remoteFileListAdapter);
 
+        mGp.localFileListEmptyView.setVisibility(TextView.GONE);
+        mGp.localFileListView.setVisibility(ListView.VISIBLE);
+
         setPasteButtonEnabled();
     }
 
     public void refreshFileListView() {
         if (mGp.currentTabName.equals(SMBEXPLORER_TAB_LOCAL)) {
-            mGp.safMgr.loadSafFileNoUsbMountPoint();
-            if (!mGp.localBase.equals("")) {
-                if (mGp.localBase.startsWith(mGp.safMgr.getUsbRootPath())) {
-                    NotifyEvent ntfy=new NotifyEvent(mContext);
-                    ntfy.setListener(new NotifyEvent.NotifyEventListener() {
-                        @Override
-                        public void positiveResponse(Context context, Object[] objects) {
-                            ArrayList<FileListItem> tfl=(ArrayList<FileListItem>)objects[0];
-                            mGp.localFileListAdapter.setDataList(tfl);
-                            mGp.localFileListAdapter.notifyDataSetChanged();
-                            mGp.tabHost.getTabWidget().getChildTabViewAt(SMBEXPLORER_TAB_POS_LOCAL).setEnabled(true);
-                        }
-                        @Override
-                        public void negativeResponse(Context context, Object[] objects) {}
-                    });
-                    createUsbFileList(false, mGp.localBase+"/"+mGp.localDir, ntfy);
-                } else {
-                    int fv=0;
-                    int top=0;
-                    if (mGp.localFileListView.getChildAt(0)!=null) {
-                        fv=mGp.localFileListView.getFirstVisiblePosition();
-                        top=mGp.localFileListView.getChildAt(0).getTop();
-                    }
-                    if (!updateLocalDirSpinner()) {
-                        String t_dir=buildFullPath(mGp.localBase,mGp.localDir);
-                        loadLocalFilelist(mGp.localBase,mGp.localDir, null);
-                        mGp.localFileListView.setSelectionFromTop(fv, top);
-                        setEmptyFolderView();
-                    }
+            if (mGp.currentLocalStorage==null) return;
+//            mGp.safMgr.buildSafFileList();
+            NotifyEvent ntfy=new NotifyEvent(mContext);
+            ntfy.setListener(new NotifyEvent.NotifyEventListener() {
+                @Override
+                public void positiveResponse(Context context, Object[] objects) {
+                    ArrayList<FileListItem> tfl=(ArrayList<FileListItem>)objects[0];
+                    mGp.localFileListAdapter.setDataList(tfl);
+                    mGp.localFileListAdapter.notifyDataSetChanged();
+                    mGp.tabHost.getTabWidget().getChildTabViewAt(SMBEXPLORER_TAB_POS_LOCAL).setEnabled(true);
+                    setEmptyFolderView();
                 }
+                @Override
+                public void negativeResponse(Context context, Object[] objects) {}
+            });
+
+            int fv=0;
+            int top=0;
+            if (mGp.localFileListView.getChildAt(0)!=null) {
+                fv=mGp.localFileListView.getFirstVisiblePosition();
+                top=mGp.localFileListView.getChildAt(0).getTop();
             }
+            if (!updateLocalDirSpinner()) {
+//                String t_dir=mGp.localDirectory;//buildFullPath(mGp.localBase,mGp.localDirectory);
+//                loadLocalFilelist("",mGp.localDirectory, null);
+//                mGp.localFileListView.setSelectionFromTop(fv, top);
+//                setEmptyFolderView();
+            }
+            if (mGp.currentLocalStorage.storage_saf_file) createSafApiFileList(mGp.currentLocalStorage.storage_root, false, mGp.localDirectory, ntfy);
+            else createFileApiFileList(false, mGp.localDirectory, ntfy);
         } else if (mGp.currentTabName.equals(SMBEXPLORER_TAB_REMOTE)) {
-            if (!mGp.remoteBase.equals("")) {
-                loadRemoteFilelist(mGp.remoteBase, mGp.remoteDir);
+            if (!mGp.remoteMountpoint.equals("")) {
+                loadRemoteFilelist(mGp.remoteMountpoint, mGp.remoteDirectory, null);
             }
         }
     }
 
     private MountPointHistoryItem getMountPointHistoryItem(String mp) {
+//        Thread.dumpStack();
         for(MountPointHistoryItem item:mGp.mountPointHistoryList) {
             if (item.mp_name.equals(mp)) {
                 mUtil.addDebugMsg(1,"I","getMountPointHistoryItem mp="+mp+", result="+item);
@@ -328,7 +336,7 @@ public class FileManager {
             mGp.mountPointHistoryList.add(nmp);
             mUtil.addDebugMsg(1,"I","addMountPointHistoryItem Added mp="+mp+", dir="+dir);
         } else {
-            mUtil.addDebugMsg(1,"I","addMountPointHistoryItem Alread registered mp="+mp+", dir="+dir);
+            mUtil.addDebugMsg(1,"I","addMountPointHistoryItem Already registered mp="+mp+", dir="+dir);
             DirectoryHistoryItem dhi=getDirectoryHistoryItem(mp,dir);
             if (dhi!=null) {
                 dhi.file_list=fl;
@@ -336,46 +344,47 @@ public class FileManager {
         }
     }
 
-    public void loadLocalFilelist(String base, String dir, NotifyEvent p_ntfy) {
-        String t_dir=buildFullPath(mGp.localBase,mGp.localDir);
-//		switchTab(SMBEXPLORER_TAB_LOCAL);
-        NotifyEvent ntfy=new NotifyEvent(mContext);
-        ntfy.setListener(new NotifyEvent.NotifyEventListener() {
-            @Override
-            public void positiveResponse(Context context, Object[] objects) {
-                ArrayList<FileListItem> tfl=(ArrayList<FileListItem>)objects[0];
-                if (tfl==null) return;
-                addMountPointHistoryItem(base, dir, tfl);
+    public void loadLocalFilelist(final String path, NotifyEvent p_ntfy) {
+        if (mGp.safMgr.getSafStorageList().size()>0) {
+            NotifyEvent ntfy=new NotifyEvent(mContext);
+            ntfy.setListener(new NotifyEvent.NotifyEventListener() {
+                @Override
+                public void positiveResponse(Context context, Object[] objects) {
+                    ArrayList<FileListItem> tfl=(ArrayList<FileListItem>)objects[0];
+                    if (tfl==null) return;
+                    addMountPointHistoryItem(mGp.currentLocalStorage.storage_id, mGp.localDirectory, tfl);
 
-                mGp.localFileListAdapter.setShowLastModified(true);
-                mGp.localFileListAdapter.setDataList(tfl);
-                mGp.localFileListAdapter.notifyDataSetChanged();
+                    mGp.localFileListAdapter.setShowLastModified(true);
+                    mGp.localFileListAdapter.setDataList(tfl);
+                    mGp.localFileListAdapter.notifyDataSetChanged();
 
-                if (dir.equals("")) {
-                    mGp.localFileListTopBtn.setEnabled(false);
-                    mGp.localFileListUpBtn.setEnabled(false);
-                } else {
-                    mGp.localFileListTopBtn.setEnabled(true);
-                    mGp.localFileListUpBtn.setEnabled(true);
+                    if (mGp.localDirectory.equals(mGp.currentLocalStorage.storage_root.getPath())) {
+                        mGp.localFileListTopBtn.setEnabled(false);
+                        mGp.localFileListUpBtn.setEnabled(false);
+                    } else {
+                        mGp.localFileListTopBtn.setEnabled(true);
+                        mGp.localFileListUpBtn.setEnabled(true);
+                    }
+
+                    mGp.tabHost.getTabWidget().getChildTabViewAt(SMBEXPLORER_TAB_POS_LOCAL).setEnabled(true);
+
+                    setFileListPathName(mGp.localFileListPath,"",mGp.localDirectory);
+                    setLocalContextButtonStatus();
+
+                    if (p_ntfy!=null) p_ntfy.notifyToListener(true, null);
                 }
 
-                mGp.tabHost.getTabWidget().getChildTabViewAt(SMBEXPLORER_TAB_POS_LOCAL).setEnabled(true);
-
-                setFileListPathName(mGp.localFileListPath,mGp.localBase,mGp.localDir);
-                setLocalContextButtonStatus();
-
-                if (p_ntfy!=null) p_ntfy.notifyToListener(true, null);
-            }
-
-            @Override
-            public void negativeResponse(Context context, Object[] objects) {}
-        });
-        if (mGp.localBase.startsWith(mGp.safMgr.getUsbRootPath())) createUsbFileList(false, t_dir, ntfy);
-        else createLocalFileList(false,t_dir, ntfy);
+                @Override
+                public void negativeResponse(Context context, Object[] objects) {}
+            });
+            String t_dir="";
+            if (mGp.currentLocalStorage.storage_saf_file) createSafApiFileList(mGp.currentLocalStorage.storage_root, false, path, ntfy);
+            else createFileApiFileList(false, path, ntfy);
+        }
     }
 
-    private void loadRemoteFilelist(final String url, final String dir) {
-        final String t_dir=buildFullPath(mGp.remoteBase,mGp.remoteDir);
+    private void loadRemoteFilelist(final String url, final String dir, final DirectoryHistoryItem dhli) {
+        final String t_dir=buildFullPath(mGp.remoteMountpoint,mGp.remoteDirectory);
         NotifyEvent ne=new NotifyEvent(mContext);
         ne.setListener(new NotifyEvent.NotifyEventListener() {
             @Override
@@ -384,9 +393,10 @@ public class FileManager {
                 addDirectoryHistoryItem(url, dir, tfl);
                 mGp.remoteFileListAdapter.setDataList(tfl);
                 mGp.remoteFileListAdapter.notifyDataSetChanged();
-                setFileListPathName(mGp.remoteFileListPath,mGp.remoteBase,mGp.remoteDir);
+                setFileListPathName(mGp.remoteFileListPath,mGp.remoteMountpoint,mGp.remoteDirectory);
                 setRemoteContextButtonStatus();
                 setEmptyFolderView();
+                if (dhli!=null) mGp.remoteFileListView.setSelectionFromTop(dhli.pos_fv, dhli.pos_top);
 
                 if (dir.equals("")) {
                     mGp.remoteFileListTopBtn.setEnabled(false);
@@ -402,23 +412,24 @@ public class FileManager {
                 addDirectoryHistoryItem(url, dir, new ArrayList<FileListItem>());
                 mGp.remoteFileListAdapter.setDataList(new ArrayList<FileListItem>());
                 mGp.remoteFileListAdapter.notifyDataSetChanged();
-                setFileListPathName(mGp.remoteFileListPath,mGp.remoteBase,mGp.remoteDir);
+                setFileListPathName(mGp.remoteFileListPath,mGp.remoteMountpoint,mGp.remoteDirectory);
                 setEmptyFolderView();
             }
         });
-        createRemoteFileList(RetrieveFileList.OPCD_FILE_LIST, url+"/"+dir+"/",ne);
+        if (dir.equals("")) createRemoteFileList(RetrieveFileList.OPCD_FILE_LIST, url+"/",ne);
+        else createRemoteFileList(RetrieveFileList.OPCD_FILE_LIST, url+"/"+dir+"/",ne);
     }
 
     public boolean updateLocalDirSpinner() {
         int sel_no=mGp.localFileListDirSpinner.getSelectedItemPosition();
 
         CustomSpinnerAdapter adapter = (CustomSpinnerAdapter) mGp.localFileListDirSpinner.getAdapter();
-        mGp.localStorageConfig=createLocalProfileEntry();
+        mGp.localStorageList =createLocalProfileEntry();
         boolean changed=false;
-        if (mGp.localStorageConfig.size()==adapter.getCount()) {
+        if (mGp.localStorageList.size()==adapter.getCount()) {
             for(int i=0;i>adapter.getCount();i++) {
                 String a_item=adapter.getItem(i);
-                if (!a_item.equals(mGp.localStorageConfig.get(i))) {
+                if (!a_item.equals(mGp.localStorageList.get(i))) {
                     changed=true;
                     break;
                 }
@@ -427,8 +438,8 @@ public class FileManager {
             changed=true;
         }
         adapter.clear();
-        for (int i=0;i<mGp.localStorageConfig.size();i++) {
-            adapter.add(mGp.localStorageConfig.get(i).storage_name);
+        for (int i = 0; i<mGp.localStorageList.size(); i++) {
+            adapter.add(mGp.localStorageList.get(i).storage_name);
         }
         if (adapter.getCount()>sel_no) mGp.localFileListDirSpinner.setSelection(sel_no);
         else mGp.localFileListDirSpinner.setSelection(0);
@@ -437,6 +448,7 @@ public class FileManager {
     }
 
     public void setLocalDirBtnListener() {
+//        Thread.dumpStack();
         int sel_no=mGp.localFileListDirSpinner.getSelectedItemPosition();
         CustomSpinnerAdapter adapter = new CustomSpinnerAdapter(mActivity, android.R.layout.simple_spinner_item);
 //        adapter.setTextColor(Color.BLACK);
@@ -444,12 +456,18 @@ public class FileManager {
         mGp.localFileListDirSpinner.setPrompt("Select Storage");
         mGp.localFileListDirSpinner.setAdapter(adapter);
 
-        mGp.localStorageConfig=createLocalProfileEntry();
-        for (int i=0;i<mGp.localStorageConfig.size();i++) {
-            adapter.add(mGp.localStorageConfig.get(i).storage_name);
+        mGp.localStorageList =createLocalProfileEntry();
+        for (int i = 0; i<mGp.localStorageList.size(); i++) {
+            adapter.add(mGp.localStorageList.get(i).storage_name);
         }
         if (adapter.getCount()>sel_no) mGp.localFileListDirSpinner.setSelection(sel_no);
         else mGp.localFileListDirSpinner.setSelection(0);
+
+        if (mGp.localStorageList.size()==0) {
+            if (Build.VERSION.SDK_INT>=29) {
+                mActivity.requestStoragePermissions();
+            }
+        }
 
         mGp.localFileListDirSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -457,53 +475,43 @@ public class FileManager {
                 if (!isSpinnerSelectionEnabled()) return;
                 Spinner spinner = (Spinner) parent;
                 String stg_name=(String) spinner.getSelectedItem();
-                String turl="";
-                for(GlobalParameters.LocalStorageConfig item:mGp.localStorageConfig) {
+                if (mGp.currentLocalStorage !=null) {
+                    mGp.currentLocalStorage.storage_last_use_directory=mGp.localDirectory;
+                    int pos_fv=mGp.localFileListView.getFirstVisiblePosition();
+                    int pos_top=0;
+                    if (mGp.localFileListView.getChildAt(0)!=null) pos_top=mGp.localFileListView.getChildAt(0).getTop();
+                    mGp.currentLocalStorage.storage_pos_fv=pos_fv;
+                    mGp.currentLocalStorage.storage_pos_top=pos_top;
+                    log.info("set fv="+mGp.currentLocalStorage.storage_pos_fv+", top="+mGp.currentLocalStorage.storage_pos_top);
+                }
+                for(LocalStorage item:mGp.localStorageList) {
                     if (item.storage_name.equals(stg_name)) {
-                        turl=item.storage_path;
+                        mGp.currentLocalStorage =item;
+                        mGp.currentLocalStorage.storage_pos_fv=item.storage_pos_fv;
+                        mGp.currentLocalStorage.storage_pos_top=item.storage_pos_top;
+                        mGp.localDirectory =item.storage_last_use_directory;
+                        log.info("new fv="+mGp.currentLocalStorage.storage_pos_fv+", top="+mGp.currentLocalStorage.storage_pos_top);
+//                        if (!item.storage_saf_file) mGp.localBase=mGp.internalRootDirectory;
+//                        else mGp.localBase=item.storage_root.getName();
                     }
                 }
-                MountPointHistoryItem mphi=getMountPointHistoryItem(turl);
-                if (mphi!=null) {
-                    updateDirectoryHistoryItem(mGp.localBase, mGp.localDir, mGp.localFileListView, mGp.localFileListAdapter);
-                    ArrayList<DirectoryHistoryItem> dhl=mphi.directory_history;
-                    DirectoryHistoryItem dhi=dhl.get(dhl.size()-1);
-
-                    mGp.localDir=dhi.directory_name;
-                    mGp.localBase=mphi.mp_name;
-
-                    loadLocalFilelist(mGp.localBase, mGp.localDir, null);
-                    mGp.localFileListView.setSelection(0);
-                    for (int j = 0; j < mGp.localFileListView.getChildCount(); j++)
-                        mGp.localFileListView.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
-                    setEmptyFolderView();
-
-                    //Cache
-//                    mGp.localFileListAdapter.setDataList(dhi.file_list);
-//                    mGp.localFileListAdapter.notifyDataSetChanged();
-//                    mGp.localFileListView.setSelectionFromTop(dhi.pos_top, dhi.pos_fv);
-//                    if (dhl.size()>1) {
-//                        mGp.localFileListTopBtn.setEnabled(true);
-//                        mGp.localFileListUpBtn.setEnabled(true);
-//                    } else {
-//                        mGp.localFileListTopBtn.setEnabled(false);
-//                        mGp.localFileListUpBtn.setEnabled(false);
-//                    }
-//
-//                    mGp.tabHost.getTabWidget().getChildTabViewAt(SMBEXPLORER_TAB_POS_LOCAL).setEnabled(true);
-//                    setFileListPathName(mGp.localFileListPath,mGp.localBase,mGp.localDir);
-//                    setLocalContextButtonStatus();
-                } else {
-                    updateDirectoryHistoryItem(mGp.localBase, mGp.localDir, mGp.localFileListView, mGp.localFileListAdapter);
-                    mGp.localDir="";
-                    mGp.localBase=turl;
-                    loadLocalFilelist(mGp.localBase, mGp.localDir, null);
-                    mGp.localFileListView.setSelection(0);
-                    for (int j = 0; j < mGp.localFileListView.getChildCount(); j++)
-                        mGp.localFileListView.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
-                    setEmptyFolderView();
-//                    addMountPointHistoryItem(mGp.localBase, mGp.localDir, mGp.localFileListAdapter.getDataList());
-                }
+                mGp.localDirectory =mGp.currentLocalStorage.storage_root.getPath();
+                NotifyEvent ntfy=new NotifyEvent(mContext);
+                ntfy.setListener(new NotifyEvent.NotifyEventListener() {
+                    @Override
+                    public void positiveResponse(Context context, Object[] objects) {
+                        for (int j = 0; j < mGp.localFileListView.getChildCount(); j++)
+                            mGp.localFileListView.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
+                        setEmptyFolderView();
+                        if (mGp.currentLocalStorage.storage_pos_fv==-1) mGp.localFileListView.setSelection(0);
+                        else mGp.localFileListView.setSelectionFromTop(mGp.currentLocalStorage.storage_pos_fv, mGp.currentLocalStorage.storage_pos_top);
+//                        log.info("restore fv="+mGp.currentLocalStorage.storage_pos_fv+", top="+mGp.currentLocalStorage.storage_pos_top);
+                    }
+                    @Override
+                    public void negativeResponse(Context context, Object[] objects) {}
+                });
+                String t_dir="";
+                loadLocalFilelist(mGp.localDirectory, ntfy);
             }
             @Override
             public void onNothingSelected(AdapterView<?> arg0) {
@@ -619,27 +627,27 @@ public class FileManager {
                 mGp.localFileListAdapter.setAllItemChecked(false);
                 result=true;
             } else {
-                if (mGp.localFileListUpBtn.isEnabled()) {
-                    processLocalUpButton();
-                    result=true;
-                }
+//                if (mGp.currentLocalStorage!=null && mGp.localFileListUpBtn.isEnabled()) {
+//                    processLocalUpButton();
+//                    result=true;
+//                }
             }
         } else if (mGp.currentTabName.equals(SMBEXPLORER_TAB_REMOTE)) {
             if (mGp.remoteFileListAdapter.isItemSelected()) {
                 mGp.remoteFileListAdapter.setAllItemChecked(false);
                 result=true;
             } else {
-                if (mGp.remoteFileListUpBtn.isEnabled()) {
-                    processRemoteUpButton();
-                    result=true;
-                }
+//                if (mGp.remoteFileListUpBtn.isEnabled()) {
+//                    processRemoteUpButton();
+//                    result=true;
+//                }
             }
         }
         return result;
     }
 
     private void processLocalUpButton() {
-        MountPointHistoryItem mphi=getMountPointHistoryItem(mGp.localBase);
+        MountPointHistoryItem mphi=getMountPointHistoryItem(mGp.currentLocalStorage.storage_id);
         mphi.directory_history.remove(mphi.directory_history.size()-1);
         DirectoryHistoryItem n_dhi=mphi.directory_history.get(mphi.directory_history.size()-1);
 
@@ -653,24 +661,33 @@ public class FileManager {
             public void positiveResponse(Context context, Object[] objects) {
                 ArrayList<FileListItem> tfl=(ArrayList<FileListItem>)objects[0];
                 if (tfl==null) return;
-                mGp.localDir=n_dhi.directory_name;
+                mGp.localDirectory =n_dhi.directory_name;
                 mGp.localFileListAdapter.setDataList(tfl);
                 mGp.localFileListAdapter.notifyDataSetChanged();
-                mGp.localFileListView.setSelectionFromTop(n_dhi.pos_fv, n_dhi.pos_top);
-                setFileListPathName(mGp.localFileListPath,mGp.localBase,mGp.localDir);
+//                setFileListPathName(mGp.localFileListPath,mGp.localBase,mGp.localDirectory);
+                setFileListPathName(mGp.localFileListPath,"",mGp.localDirectory);
                 setEmptyFolderView();
+                mGp.localFileListView.setSelectionFromTop(n_dhi.pos_fv, n_dhi.pos_top);
+//                mUiHandler.post(new Runnable(){
+//                    @Override
+//                    public void run() {
+//                        mGp.localFileListView.setSelectionFromTop(n_dhi.pos_fv, n_dhi.pos_top);
+////                        log.info("restored fv="+n_dhi.pos_fv+", top="+n_dhi.pos_top);
+//                    }
+//                });
+//                mGp.localFileListView.setSelectionFromTop(n_dhi.pos_fv, n_dhi.pos_top);
+//                log.info("restored fv="+n_dhi.pos_fv+", top="+n_dhi.pos_top);
             }
 
             @Override
             public void negativeResponse(Context context, Object[] objects) {}
         });
-        if (mGp.localBase.startsWith(mGp.safMgr.getUsbRootPath())) createUsbFileList(false, mGp.localBase+"/"+n_dhi.directory_name, ntfy);
-        else createLocalFileList(false,mGp.localBase+"/"+n_dhi.directory_name, ntfy);
-//        ntfy.notifyToListener(true, new Object[]{n_dhi.file_list});
+        if (mGp.currentLocalStorage.storage_saf_file) createSafApiFileList(mGp.currentLocalStorage.storage_root, false, n_dhi.directory_name, ntfy);
+        else createFileApiFileList(false, n_dhi.directory_name, ntfy);
     }
 
     private void processLocalTopButton() {
-        MountPointHistoryItem mphi=getMountPointHistoryItem(mGp.localBase);
+        MountPointHistoryItem mphi=getMountPointHistoryItem(mGp.currentLocalStorage.storage_id);
         DirectoryHistoryItem n_dhi=mphi.directory_history.get(0);
         mphi.directory_history.clear();
         mphi.directory_history.add(n_dhi);
@@ -681,11 +698,16 @@ public class FileManager {
             public void positiveResponse(Context context, Object[] objects) {
                 ArrayList<FileListItem> tfl=(ArrayList<FileListItem>)objects[0];
                 if (tfl==null) return;
-                mGp.localDir="";
+                mGp.localDirectory =n_dhi.directory_name;
                 mGp.localFileListAdapter.setDataList(tfl);
                 mGp.localFileListAdapter.notifyDataSetChanged();
-                setFileListPathName(mGp.localFileListPath,mGp.localBase,mGp.localDir);
-                mGp.localFileListView.setSelectionFromTop(n_dhi.pos_fv, n_dhi.pos_top);
+                setFileListPathName(mGp.localFileListPath,"",mGp.localDirectory);
+                mUiHandler.post(new Runnable(){
+                    @Override
+                    public void run() {
+                        mGp.localFileListView.setSelectionFromTop(n_dhi.pos_fv, n_dhi.pos_top);
+                    }
+                });
                 setEmptyFolderView();
                 for (int j = 0; j < mGp.localFileListView.getChildCount(); j++)
                     mGp.localFileListView.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
@@ -696,9 +718,7 @@ public class FileManager {
             @Override
             public void negativeResponse(Context context, Object[] objects) {}
         });
-        if (mGp.localBase.startsWith(mGp.safMgr.getUsbRootPath())) createUsbFileList(false, n_dhi.directory_name, ntfy);
-        else createLocalFileList(false,mGp.localBase, ntfy);
-//        ntfy.notifyToListener(true, new Object[]{n_dhi.file_list});
+        createSafApiFileList(mGp.currentLocalStorage.storage_root, false, n_dhi.directory_name, ntfy);
     }
 
     public void setEmptyFolderView() {
@@ -716,7 +736,7 @@ public class FileManager {
         }
         if (mGp.remoteFileListAdapter!=null) {
             LinearLayout ll_context=(LinearLayout)mGp.mRemoteView.findViewById(R.id.context_view_file);
-            if (mGp.remoteFileListAdapter.getCount()>0 || !mGp.remoteBase.equals("")) {
+            if (mGp.remoteFileListAdapter.getCount()>0 || !mGp.remoteMountpoint.equals("")) {
                 ll_context.setVisibility(LinearLayout.VISIBLE);
                 mGp.remoteFileListEmptyView.setVisibility(TextView.GONE);
                 mGp.remoteFileListView.setVisibility(ListView.VISIBLE);
@@ -740,7 +760,7 @@ public class FileManager {
         if (ia.startsWith("192.168.") || ia.startsWith("10.") || ia.startsWith("172.16") ) {
             mGp.remoteFileListDirSpinner.setEnabled(true);
             mGp.remoteFileListView.setEnabled(true);
-            if (mGp.remoteDir.equals("")) {
+            if (mGp.remoteDirectory.equals("")) {
                 mGp.remoteFileListTopBtn.setEnabled(false);
                 mGp.remoteFileListUpBtn.setEnabled(false);
             } else {
@@ -764,12 +784,12 @@ public class FileManager {
         spAdapter.setDropDownViewResource(android.R.layout.select_dialog_singlechoice);
         mGp.remoteFileListDirSpinner.setPrompt("リモートの選択");
         mGp.remoteFileListDirSpinner.setAdapter(spAdapter);
-        if (mGp.remoteBase.equals("")) spAdapter.add("--- Not selected ---");
+        if (mGp.remoteMountpoint.equals("")) spAdapter.add("--- Not selected ---");
         int a_no=0;
         for (int i = 0; i<mGp.smbConfigList.size(); i++) {
             spAdapter.add(mGp.smbConfigList.get(i).getName());
             String surl=buildRemoteBase(mGp.smbConfigList.get(i));
-            if (surl.equals(mGp.remoteBase))
+            if (surl.equals(mGp.remoteMountpoint))
                 mGp.remoteFileListDirSpinner.setSelection(a_no);
             a_no++;
         }
@@ -799,42 +819,26 @@ public class FileManager {
                 String turl=buildRemoteBase(pli);
                 MountPointHistoryItem mphi=getMountPointHistoryItem(turl);
                 if (mphi!=null) {
+                    updateDirectoryHistoryItem(mGp.remoteMountpoint, mGp.remoteDirectory, mGp.remoteFileListView, mGp.remoteFileListAdapter);
                     ArrayList<DirectoryHistoryItem> dhl=mphi.directory_history;
                     DirectoryHistoryItem dhi=dhl.get(dhl.size()-1);
                     mGp.currentSmbServerConfig =pli;
-                    mGp.remoteBase=mphi.mp_name;
-                    mGp.remoteDir=dhi.directory_name;
+                    mGp.remoteMountpoint =mphi.mp_name;
+                    mGp.remoteDirectory =dhi.directory_name;
 
-                    loadRemoteFilelist(mGp.remoteBase, mGp.remoteDir);
-                    mGp.remoteFileListView.setSelection(0);
+                    loadRemoteFilelist(mGp.remoteMountpoint, mGp.remoteDirectory, dhi);
+//                    mGp.remoteFileListView.setSelection(0);
                     for (int j = 0; j < mGp.remoteFileListView.getChildCount(); j++)
                         mGp.remoteFileListView.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
-
-                    //Cache
-//                    mGp.remoteFileListAdapter.setDataList(dhi.file_list);
-//                    mGp.remoteFileListAdapter.notifyDataSetChanged();
-//                    mGp.remoteFileListView.setSelectionFromTop(dhi.pos_top, dhi.pos_fv);
-//                    if (dhl.size()>1) {
-//                        mGp.remoteFileListTopBtn.setEnabled(true);
-//                        mGp.remoteFileListUpBtn.setEnabled(true);
-//                    } else {
-//                        mGp.remoteFileListTopBtn.setEnabled(false);
-//                        mGp.remoteFileListUpBtn.setEnabled(false);
-//                    }
-//
-//                    mGp.tabHost.getTabWidget().getChildTabViewAt(SMBEXPLORER_TAB_POS_LOCAL).setEnabled(true);
-//                    setEmptyFolderView();
-//                    setFileListPathName(mGp.remoteFileListPath,mGp.remoteBase,mGp.remoteDir);
-//                    setRemoteContextButtonStatus();
                 } else {
-                    updateDirectoryHistoryItem(mGp.remoteBase, mGp.remoteDir, mGp.remoteFileListView, mGp.remoteFileListAdapter);
+                    updateDirectoryHistoryItem(mGp.remoteMountpoint, mGp.remoteDirectory, mGp.remoteFileListView, mGp.remoteFileListAdapter);
                     mGp.tabHost.getTabWidget().getChildTabViewAt(SMBEXPLORER_TAB_POS_REMOTE).setEnabled(true);
                     mGp.currentSmbServerConfig =pli;
-                    mGp.remoteBase = turl;
-                    mGp.remoteDir="";
-                    addMountPointHistoryItem(mGp.remoteBase, mGp.remoteDir, new ArrayList<FileListItem>());
+                    mGp.remoteMountpoint = turl;
+                    mGp.remoteDirectory ="";
+                    addMountPointHistoryItem(mGp.remoteMountpoint, mGp.remoteDirectory, new ArrayList<FileListItem>());
 
-                    loadRemoteFilelist(mGp.remoteBase, mGp.remoteDir);
+                    loadRemoteFilelist(mGp.remoteMountpoint, mGp.remoteDirectory, null);
                     mGp.remoteFileListView.setSelection(0);
                     for (int j = 0; j < mGp.remoteFileListView.getChildCount(); j++)
                         mGp.remoteFileListView.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
@@ -877,7 +881,7 @@ public class FileManager {
     }
 
     private void processRemoteUpButton() {
-        MountPointHistoryItem mphi=getMountPointHistoryItem(mGp.remoteBase);
+        MountPointHistoryItem mphi=getMountPointHistoryItem(mGp.remoteMountpoint);
         mphi.directory_history.remove(mphi.directory_history.size()-1);
         DirectoryHistoryItem n_dhi=mphi.directory_history.get(mphi.directory_history.size()-1);
 
@@ -891,10 +895,10 @@ public class FileManager {
             public void positiveResponse(Context context, Object[] objects) {
                 ArrayList<FileListItem> tfl=(ArrayList<FileListItem>)objects[0];
                 if (tfl==null) return;
-                mGp.remoteDir=n_dhi.directory_name;
+                mGp.remoteDirectory =n_dhi.directory_name;
                 mGp.remoteFileListAdapter.setDataList(tfl);
                 mGp.remoteFileListAdapter.notifyDataSetChanged();
-                setFileListPathName(mGp.remoteFileListPath,mGp.remoteBase,mGp.remoteDir);
+                setFileListPathName(mGp.remoteFileListPath,mGp.remoteMountpoint,mGp.remoteDirectory);
                 mGp.remoteFileListView.setSelectionFromTop(n_dhi.pos_fv, n_dhi.pos_top);
                 setEmptyFolderView();
                 for (int j = 0; j < mGp.remoteFileListView.getChildCount(); j++)
@@ -904,11 +908,11 @@ public class FileManager {
             @Override
             public void negativeResponse(Context context, Object[] objects) {}
         });
-        createRemoteFileList(RetrieveFileList.OPCD_FILE_LIST, mGp.remoteBase+"/"+n_dhi.directory_name, ntfy);
+        createRemoteFileList(RetrieveFileList.OPCD_FILE_LIST, mGp.remoteMountpoint +"/"+n_dhi.directory_name, ntfy);
     }
 
     private void processRemoteTopButton() {
-        MountPointHistoryItem mphi=getMountPointHistoryItem(mGp.remoteBase);
+        MountPointHistoryItem mphi=getMountPointHistoryItem(mGp.remoteMountpoint);
         DirectoryHistoryItem n_dhi=mphi.directory_history.get(0);
         mphi.directory_history.clear();
         mphi.directory_history.add(n_dhi);
@@ -922,11 +926,11 @@ public class FileManager {
             public void positiveResponse(Context context, Object[] objects) {
                 ArrayList<FileListItem> tfl=(ArrayList<FileListItem>)objects[0];
                 if (tfl==null) return;
-                mGp.remoteBase=n_dhi.directory_name;
-                mGp.remoteDir="";
+                mGp.remoteMountpoint =n_dhi.directory_name;
+                mGp.remoteDirectory ="";
                 mGp.remoteFileListAdapter.setDataList(tfl);
                 mGp.remoteFileListAdapter.notifyDataSetChanged();
-                setFileListPathName(mGp.remoteFileListPath,mGp.remoteBase,mGp.remoteDir);
+                setFileListPathName(mGp.remoteFileListPath,mGp.remoteMountpoint,mGp.remoteDirectory);
                 mGp.remoteFileListView.setSelectionFromTop(n_dhi.pos_fv, n_dhi.pos_top);
                 setEmptyFolderView();
                 for (int j = 0; j < mGp.remoteFileListView.getChildCount(); j++)
@@ -936,7 +940,7 @@ public class FileManager {
             @Override
             public void negativeResponse(Context context, Object[] objects) {}
         });
-        createRemoteFileList(RetrieveFileList.OPCD_FILE_LIST, mGp.remoteBase+"/"+n_dhi.directory_name, ntfy);
+        createRemoteFileList(RetrieveFileList.OPCD_FILE_LIST, mGp.remoteMountpoint +"/"+n_dhi.directory_name, ntfy);
     }
 
     private String buildRemoteBase(SmbServerConfig pli) {
@@ -960,9 +964,9 @@ public class FileManager {
                     mGp.localFileListAdapter.notifyDataSetChanged();
                 } else {
                     mActivity.setUiEnabled(false);
-                    mUtil.addDebugMsg(1,"I","Local filelist item clicked :" + item.getName());
+                    mUtil.addDebugMsg(1,"I","Local filelist item clicked :" + item.getName()+", dir="+mGp.localDirectory);
                     if (item.isDir()) {
-                        updateDirectoryHistoryItem(mGp.localBase, mGp.localDir, mGp.localFileListView, mGp.localFileListAdapter);
+                        updateDirectoryHistoryItem(mGp.currentLocalStorage.storage_id, item.getPath(), mGp.localFileListView, mGp.localFileListAdapter);
 
                         NotifyEvent ntfy=new NotifyEvent(mContext);
                         ntfy.setListener(new NotifyEvent.NotifyEventListener() {
@@ -971,19 +975,20 @@ public class FileManager {
                                 ArrayList<FileListItem> tfl=(ArrayList<FileListItem>)objects[0];
                                 if (tfl==null) return;
                                 String t_dir=item.getPath()+"/"+item.getName();
-                                mGp.localDir=t_dir.replace(mGp.localBase+"/", "");
+                                mGp.localDirectory =t_dir;//.replace(mGp.localBase,"");
                                 mGp.localFileListAdapter.setDataList(tfl);
                                 mGp.localFileListAdapter.notifyDataSetChanged();
                                 for (int j = 0; j < mGp.localFileListView.getChildCount(); j++)
                                     mGp.localFileListView.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
-//                                setFilelistCurrDir(mGp.localFileListDirSpinner,mGp.localBase, mGp.localDir);
-                                setFileListPathName(mGp.localFileListPath,mGp.localBase,mGp.localDir);
+//                                setFilelistCurrDir(mGp.localFileListDirSpinner,mGp.localBase, mGp.localDirectory);
+//                                setFileListPathName(mGp.localFileListPath,mGp.localBase,mGp.localDirectory);
+                                setFileListPathName(mGp.localFileListPath,"",mGp.localDirectory);
                                 setEmptyFolderView();
                                 mGp.localFileListView.setSelection(0);
                                 mGp.localFileListTopBtn.setEnabled(true);
                                 mGp.localFileListUpBtn.setEnabled(true);
 
-                                addDirectoryHistoryItem(mGp.localBase, mGp.localDir, tfl);
+                                addDirectoryHistoryItem(mGp.currentLocalStorage.storage_id, mGp.localDirectory, tfl);
 
                                 mActivity.setUiEnabled(true);
                             }
@@ -991,11 +996,12 @@ public class FileManager {
                             @Override
                             public void negativeResponse(Context context, Object[] objects) {}
                         });
-                        if (mGp.localBase.startsWith(mGp.safMgr.getUsbRootPath())) {
-                            if (mGp.localDir.equals("")) createUsbFileList(false, item.getPath()+"/"+item.getName(), ntfy);
-                            else createUsbFileList(false, item.getPath()+"/"+item.getName(), ntfy);
+                        if (mGp.currentLocalStorage.storage_saf_file) {
+                            if (mGp.localDirectory.equals("")) createSafApiFileList(mGp.currentLocalStorage.storage_root, false, item.getPath()+"/"+item.getName(), ntfy);
+                            else createSafApiFileList(mGp.currentLocalStorage.storage_root, false, item.getPath()+"/"+item.getName(), ntfy);
                         } else {
-                            createLocalFileList(false,item.getPath()+"/"+item.getName(), ntfy);
+                            if (mGp.localDirectory.equals("")) createFileApiFileList(false, item.getPath()+"/"+item.getName(), ntfy);
+                            else createFileApiFileList(false, item.getPath()+"/"+item.getName(), ntfy);
                         }
                     } else {
                         if (isFileListItemSelected(mGp.localFileListAdapter)) {
@@ -1012,9 +1018,11 @@ public class FileManager {
         });
     }
 
-    public void setFileListPathName(CustomTextView btn, String base, String dir) {
+    public void setFileListPathName(NonWordwrapTextView btn, String base, String dir) {
         if (dir.startsWith("/")) btn.setText(dir);
         else btn.setText("/"+dir);
+        btn.invalidate();
+        btn.requestLayout();
         setPasteButtonEnabled();
     }
 
@@ -1041,8 +1049,8 @@ public class FileManager {
         mGp.remoteContextBtnCreate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (mGp.remoteDir.length()==0) createItem(mGp.remoteFileListAdapter,"C", mGp.remoteBase);
-                else createItem(mGp.remoteFileListAdapter,"C", mGp.remoteBase+"/"+mGp.remoteDir);
+                if (mGp.remoteDirectory.length()==0) createItem(mGp.remoteFileListAdapter,"C", mGp.remoteMountpoint);
+                else createItem(mGp.remoteFileListAdapter,"C", mGp.remoteMountpoint +"/"+mGp.remoteDirectory);
             }
         });
         mGp.remoteContextBtnCut.setOnClickListener(new View.OnClickListener() {
@@ -1055,9 +1063,9 @@ public class FileManager {
             @Override
             public void onClick(View view) {
                 String to_dir="";
-                if (mGp.remoteDir.equals("")) to_dir=mGp.remoteBase;
-                else to_dir=mGp.remoteBase+"/"+mGp.remoteDir;
-                pasteItem(mGp.remoteFileListAdapter, to_dir, mGp.remoteBase);
+                if (mGp.remoteDirectory.equals("")) to_dir=mGp.remoteMountpoint;
+                else to_dir=mGp.remoteMountpoint +"/"+mGp.remoteDirectory;
+                pasteItem(mGp.remoteFileListAdapter, to_dir, mGp.remoteMountpoint);
             }
         });
         mGp.remoteContextBtnDelete.setOnClickListener(new View.OnClickListener() {
@@ -1097,8 +1105,8 @@ public class FileManager {
         mGp.localContextBtnCreate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (mGp.localDir.length()==0) createItem(mGp.localFileListAdapter,"C", mGp.localBase);
-                else createItem(mGp.localFileListAdapter,"C", mGp.localBase+"/"+mGp.localDir);
+                if (mGp.localDirectory.length()==0) createItem(mGp.localFileListAdapter,"C", "");
+                else createItem(mGp.localFileListAdapter,"C", mGp.localDirectory);
             }
         });
         mGp.localContextBtnCut.setOnClickListener(new View.OnClickListener() {
@@ -1111,9 +1119,10 @@ public class FileManager {
             @Override
             public void onClick(View view) {
                 String to_dir="";
-                if (mGp.localDir.equals("")) to_dir=mGp.localBase;
-                else to_dir=mGp.localBase+"/"+mGp.localDir;
-                pasteItem(mGp.localFileListAdapter, to_dir, mGp.localBase);
+//                if (mGp.localDirectory.equals("")) to_dir=mGp.localBase;
+//                else to_dir=mGp.localBase+"/"+mGp.localDirectory;
+                to_dir=mGp.localDirectory;
+                pasteItem(mGp.localFileListAdapter, to_dir, "");
             }
         });
         mGp.localContextBtnDelete.setOnClickListener(new View.OnClickListener() {
@@ -1166,18 +1175,18 @@ public class FileManager {
                             public void positiveResponse(Context c,Object[] o) {
                                 String t_dir=item.getPath()+"/"+item.getName();
 
-                                updateDirectoryHistoryItem(mGp.remoteBase, mGp.remoteDir, mGp.remoteFileListView, mGp.remoteFileListAdapter);
+                                updateDirectoryHistoryItem(mGp.remoteMountpoint, mGp.remoteDirectory, mGp.remoteFileListView, mGp.remoteFileListAdapter);
 
-                                mGp.remoteDir=t_dir.replace(mGp.remoteBase+"/", "");
+                                mGp.remoteDirectory =t_dir.replace(mGp.remoteMountpoint +"/", "");
 
-                                addDirectoryHistoryItem(mGp.remoteBase, mGp.remoteDir, mGp.remoteFileListAdapter.getDataList());
+                                addDirectoryHistoryItem(mGp.remoteMountpoint, mGp.remoteDirectory, mGp.remoteFileListAdapter.getDataList());
 
                                 mGp.remoteFileListAdapter.setDataList((ArrayList<FileListItem>)o[0]);
                                 mGp.remoteFileListAdapter.notifyDataSetChanged();
                                 for (int j = 0; j < mGp.remoteFileListView.getChildCount(); j++)
                                     mGp.remoteFileListView.getChildAt(j).setBackgroundColor(Color.TRANSPARENT);
-//								setFilelistCurrDir(mGp.remoteFileListDirSpinner,mGp.remoteBase, mGp.remoteDir);
-                                setFileListPathName(mGp.remoteFileListPath,mGp.remoteBase,mGp.remoteDir);
+//								setFilelistCurrDir(mGp.remoteFileListDirSpinner,mGp.remoteMountpoint, mGp.remoteDirectory);
+                                setFileListPathName(mGp.remoteFileListPath,mGp.remoteMountpoint,mGp.remoteDirectory);
                                 setEmptyFolderView();
                                 mGp.remoteFileListView.setSelection(0);
 
@@ -1244,15 +1253,13 @@ public class FileManager {
             }
         });
         if (mGp.currentTabName.equals(SMBEXPLORER_TAB_LOCAL) && item.isDir() && !item.getName().startsWith(".") && item.getPath().indexOf("/.")<0) {
-            if (mGp.localBase.startsWith(mGp.internalRootDirectory) || mGp.localBase.startsWith(mGp.safMgr.getSdcardRootPath())) {
-                ccMenu.addMenuItem("Scan media file", R.drawable.context_button_media_file_scan).setOnClickListener(new CustomContextMenuItem.CustomContextMenuOnClickListener() {
-                    @Override
-                    public void onClick(CharSequence menuTitle) {
-                        scanLocalMediaFile(item);
+            ccMenu.addMenuItem("Scan media file", R.drawable.context_button_media_file_scan).setOnClickListener(new CustomContextMenuItem.CustomContextMenuOnClickListener() {
+                @Override
+                public void onClick(CharSequence menuTitle) {
+                    scanLocalMediaFile(item);
 //                    setAllFilelistItemUnChecked(fla);
-                    }
-                });
-            }
+                }
+            });
         }
         if (mGp.currentTabName.equals(SMBEXPLORER_TAB_LOCAL) && !item.isDir()) {
             ccMenu.addMenuItem("Open with Text file("+item.getName()+")").setOnClickListener(new CustomContextMenuItem.CustomContextMenuOnClickListener() {
@@ -1507,32 +1514,32 @@ public class FileManager {
         if (mime_type==null) {
             mt= MimeTypeMap.getSingleton().getMimeTypeFromExtension(fid);
             if (mt==null && fid!=null && fid.equals("log")) mt="text/plain";
+            else if (mt==null && fid!=null && (fid.equals("m3u") || fid.equals("m3u8"))) mt="application/vnd.apple.mpegurl";
         } else {
             mt=mime_type;
         }
         if (mt != null) {
-            if (mt.startsWith("text")) mt="text/plain";
+//            if (mt.startsWith("text")) mt="text/plain";
             try {
                 Intent intent = new Intent(android.content.Intent.ACTION_VIEW);
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                if (Build.VERSION.SDK_INT>=23) {
-                    if (mGp.localBase.startsWith(mGp.safMgr.getUsbRootPath())) {
-                        SafFile sf = mGp.safMgr.createUsbItem(item.getPath() + "/" + item.getName(), false);
-                        intent.setDataAndType(sf.getUri(), mt);
-                    } else if (mGp.localBase.startsWith(mGp.safMgr.getSdcardRootPath())) {
-//                        SafFile sf = mGp.safMgr.createSdcardItem(item.getPath() + "/" + item.getName(), false);
-//                        intent.setDataAndType(sf.getUri(), mt);
-                        intent.setDataAndType(Uri.parse("file://"+item.getPath()+"/"+item.getName()), mt);
-                    } else {
-                        intent.setDataAndType(Uri.parse("file://"+item.getPath()+"/"+item.getName()), mt);
-//                        Uri uri= FileProvider.getUriForFile(mContext, BuildConfig.APPLICATION_ID + ".provider", new File(item.getPath()+"/"+item.getName()));
-//                        intent.setDataAndType(uri, mt);
-                    }
+                intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                SafFile3 sf = new SafFile3(mContext, item.getPath() + "/" + item.getName());
+                Uri uri=null;
+//                if (Build.VERSION.SDK_INT>=29) {
+//                    if (sf.isSafFile()) {
+//                        uri=sf.getUri();
+//                    } else {
+//                        uri= FileProvider.getUriForFile(mContext, BuildConfig.APPLICATION_ID+".provider", new File(item.getPath()+"/"+item.getName()));
+//                    }
+//                } else {
+//                    uri= FileProvider.getUriForFile(mContext, BuildConfig.APPLICATION_ID+".provider", new File(item.getPath()+"/"+item.getName()));
+//                }
+                if (sf.isSafFile()) {
+                    uri=sf.getUri();
                 } else {
-                    intent.setDataAndType(Uri.parse("file://"+item.getPath()+"/"+item.getName()), mt);
+                    uri= FileProvider.getUriForFile(mContext, BuildConfig.APPLICATION_ID+".provider", new File(item.getPath()+"/"+item.getName()));
                 }
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                if (mt.startsWith("image")) intent.setClassName("com.sentaroh.android.TinyPictureViewer", "com.sentaroh.android.TinyPictureViewer.ActivityMain");
+                intent.setDataAndType(uri, mt);
                 mContext.startActivity(intent);
             } catch(ActivityNotFoundException e) {
                 showDialogMsg("E", "File viewer can not be found.", "File name="+item.getName()+", MimeType="+mt);
@@ -1548,16 +1555,12 @@ public class FileManager {
         if (item.getName().lastIndexOf(".") > 0) {
             fid = item.getName().substring(item.getName().lastIndexOf(".") + 1, item.getName().length()).toLowerCase();
         }
-        String mt_work="";
-        if (mt_work==null && fid!=null && (fid.equals("log") || mt_work.startsWith("text"))) {
-            mt_work="text/plain";
-        } else {
-            if (fid==null) mt_work=null;
-            else mt_work=MimeTypeMap.getSingleton().getMimeTypeFromExtension(fid);
-        }
+        String mt=MimeTypeMap.getSingleton().getMimeTypeFromExtension(fid);
+        if (mt==null && (fid.equals("log"))) mt="text/plain";
+        else if (mt==null && (fid.equals("m3u") || fid.equals("m3u8"))) mt="application/vnd.apple.mpegurl";
 
-        if (mt_work != null) {
-            final String mime_type=mt_work;
+        if (mt != null) {
+            final String mime_type=mt;
             NotifyEvent ntfy=new NotifyEvent(mContext);
             ntfy.setListener(new NotifyEvent.NotifyEventListener() {
                 @Override
@@ -1565,15 +1568,20 @@ public class FileManager {
                     try {
                         Intent intent = new Intent(android.content.Intent.ACTION_VIEW);
                         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-//                        if (Build.VERSION.SDK_INT>=24) {
-//                            intent.setDataAndType(Uri.parse("file://"+mGp.internalRootDirectory+"/Download/"+item.getName()), mime_type);
-////                            Uri uri= FileProvider.getUriForFile(mContext, BuildConfig.APPLICATION_ID + ".provider",
-////                                    new File(mGp.internalRootDirectory+"/SMBExplorer/download/"+item.getName()));
-////                            intent.setDataAndType(uri, mt);
-//                        } else {
-//                            intent.setDataAndType(Uri.parse("file://"+mGp.internalRootDirectory+"/Download/"+item.getName()), mime_type);
-//                        }
-                        intent.setDataAndType(Uri.parse("file://"+mGp.internalRootDirectory+"/Download/"+item.getName()), mime_type);
+                        Uri uri=null;
+                        SafFile3 dl=new SafFile3(mContext, mGp.internalRootDirectory+"/Download/"+item.getName());
+                        if (Build.VERSION.SDK_INT>=29) {
+                            if (dl.isSafFile()) {
+                                uri=dl.getUri();
+                            } else {
+                                uri= FileProvider.getUriForFile(mContext, BuildConfig.APPLICATION_ID+".provider",
+                                        new File(mGp.internalRootDirectory+"/Download/"+item.getName()));
+                            }
+                        } else {
+                            uri= FileProvider.getUriForFile(mContext, BuildConfig.APPLICATION_ID+".provider",
+                                    new File(mGp.internalRootDirectory+"/Download/"+item.getName()));
+                        }
+                        intent.setDataAndType(uri, mime_type);
                         mContext.startActivity(intent);
                     } catch(ActivityNotFoundException e) {
                         showDialogMsg("E", "File viewer can not be found.", "File name="+item.getName()+", MimeType="+mime_type);
@@ -1583,7 +1591,7 @@ public class FileManager {
                 public void negativeResponse(Context c,Object[] o) {
                 }
             });
-            downloadRemoteFile(fla, item, mGp.remoteBase, ntfy );
+            downloadRemoteFile(fla, item, mGp.remoteMountpoint, ntfy );
         } else {
             showDialogMsg("E", "MIME type can not be found.", "File name="+item.getName());
         }
@@ -1602,6 +1610,7 @@ public class FileManager {
         fio.setFromPass(mGp.currentSmbServerConfig.getSmbPass());
         fio.setFromSmbOptionIpcSignEnforce(mGp.currentSmbServerConfig.isSmbOptionIpcSigningEnforced());
         fio.setFromSmbOptionUseSMB2Negotiation(mGp.currentSmbServerConfig.isSmbOptionUseSMB2Negotiation());
+//        SafFile3 rt=mGp.safMgr.getRootSafFile("1CF8-3412");
 
         mGp.fileioLinkParm.add(fio);
         startFileioTask(fla,FILEIO_PARM_DOWLOAD_REMOTE_FILE,mGp.fileioLinkParm, item.getName(),p_ntfy, mGp.internalRootDirectory);
@@ -1688,10 +1697,11 @@ public class FileManager {
         };
         mGp.progressCancelBtn.setOnClickListener(mGp.progressOnClickListener);
 
-        NotifyEvent ne=new NotifyEvent(mContext);
-        ne.setListener(new NotifyEvent.NotifyEventListener() {
+        NotifyEvent ntfy=new NotifyEvent(mContext);
+        ntfy.setListener(new NotifyEvent.NotifyEventListener() {
             @Override
             public void positiveResponse(Context c,Object[] o) {
+                String elapsed_time_msg=o[0]!=null?(String)o[0]:"";
                 hideRemoteProgressView();
                 hideLocalProgressView();
                 String end_msg="File I/O task was ended without error.";
@@ -1709,6 +1719,7 @@ public class FileManager {
 //                    if (!mGp.activityIsBackground)
                     refreshFileListView();
                 } else {
+                    if (!elapsed_time_msg.equals("")) showDialogMsg("I",elapsed_time_msg,"");
                     if (p_ntfy!=null) p_ntfy.notifyToListener(true, null);
                     else {
 //					    if (!mGp.activityIsBackground)
@@ -1732,7 +1743,7 @@ public class FileManager {
             }
         });
 
-        FileIo th = new FileIo(mGp, op_cd, alp, mTcFileIoTask, ne, mContext, lmp);
+        FileIo th = new FileIo(mGp, op_cd, alp, mTcFileIoTask, ntfy, mContext, lmp);
         mTcFileIoTask.initThreadCtrl();
 		th.setName("FileIo");
         th.start();
@@ -1772,24 +1783,6 @@ public class FileManager {
         };
     }
 
-//    private ArrayList<FileIoLinkParm> buildFileioLinkParmx(ArrayList<FileIoLinkParm> alp,
-//                                                          String tgt_url1, String tgt_url2,
-//                                                          String tgt_name, String tgt_new, String username, String password,
-//                                                          boolean allcopy) {
-//        FileIoLinkParm fiop=new FileIoLinkParm();
-//        fiop.setUrl1(tgt_url1);
-//        fiop.setUrl2(tgt_url2);
-//        fiop.setName(tgt_name);
-//        fiop.setNew(tgt_new);
-//        fiop.setSmbUser(username);
-//        fiop.setSmbPassword(password);
-//        fiop.setAllCopy(allcopy);
-//
-//        alp.add(fiop);
-//
-//        return alp;
-//    };
-//
     private void createItem(final FileListAdapter fla, final String item_optyp, final String base_dir) {
         mUtil.addDebugMsg(1,"I","createItem entered.");
 
@@ -1838,6 +1831,7 @@ public class FileManager {
                         FileIoLinkParm fio=new FileIoLinkParm();
                         fio.setToDirectory(base_dir);
                         fio.setToName(newName.getText().toString());
+                        fio.setToSafRoot(mGp.currentLocalStorage.storage_root);
                         mGp.fileioLinkParm.add(fio);
                         cmd=FILEIO_PARM_LOCAL_CREATE;
                     } else {
@@ -1845,7 +1839,7 @@ public class FileManager {
 //                        mGp.fileioLinkParm=buildFileioLinkParm(mGp.fileioLinkParm, base_dir,"",newName.getText().toString(),"", mGp.smbUser,mGp.smbPass,true);
                         FileIoLinkParm fio=new FileIoLinkParm();
                         fio.setToDirectory(base_dir);
-                        fio.setToName(newName.getText().toString());
+                        fio.setToName(newName.getText().toString()+"/");
                         fio.setToSmbLevel(mGp.currentSmbServerConfig.getSmbLevel());
                         fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
                         fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
@@ -1924,19 +1918,14 @@ public class FileManager {
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setCanceledOnTouchOutside(false);
         dialog.setContentView(R.layout.file_rename_create_dlg);
-        final EditText newName =
-                (EditText) dialog.findViewById(R.id.file_rename_create_dlg_newname);
-        final Button btnOk =
-                (Button) dialog.findViewById(R.id.file_rename_create_dlg_ok_btn);
-        final Button btnCancel =
-                (Button) dialog.findViewById(R.id.file_rename_create_dlg_cancel_btn);
+        final EditText newName = (EditText) dialog.findViewById(R.id.file_rename_create_dlg_newname);
+        final Button btnOk = (Button) dialog.findViewById(R.id.file_rename_create_dlg_ok_btn);
+        final Button btnCancel = (Button) dialog.findViewById(R.id.file_rename_create_dlg_cancel_btn);
 
         CommonDialog.setDlgBoxSizeCompact(dialog);
 
-        ((TextView) dialog.findViewById(R.id.file_rename_create_dlg_title))
-                .setText("Rename");
-        ((TextView) dialog.findViewById(R.id.file_rename_create_dlg_subtitle))
-                .setText("Enter new name");
+        ((TextView) dialog.findViewById(R.id.file_rename_create_dlg_title)).setText("Rename");
+        ((TextView) dialog.findViewById(R.id.file_rename_create_dlg_subtitle)).setText("Enter new name");
 
         newName.setText(item_name);
 
@@ -1968,17 +1957,22 @@ public class FileManager {
                         fio.setFromName(from_item.getName());
                         fio.setToDirectory(from_item.getPath());
                         fio.setToName(newName.getText().toString());
+                        fio.setFromSafRoot(mGp.currentLocalStorage.storage_root);
+                        fio.setToSafRoot(mGp.currentLocalStorage.storage_root);
                         mGp.fileioLinkParm.add(fio);
                         cmd=FILEIO_PARM_LOCAL_RENAME;
                     } else {
                         cmd=FILEIO_PARM_REMOTE_RENAME;
                         FileIoLinkParm fio=new FileIoLinkParm();
                         fio.setFromDirectory(from_item.getPath());
-                        fio.setFromName(from_item.getName());
+                        if (from_item.isDir()) fio.setFromName(from_item.getName()+"/");
+                        else fio.setFromName(from_item.getName());
                         fio.setFromUser(mGp.currentSmbServerConfig.getSmbUser());
                         fio.setFromPass(mGp.currentSmbServerConfig.getSmbPass());
+
                         fio.setToDirectory(from_item.getPath());
-                        fio.setToName(newName.getText().toString());
+                        if (from_item.isDir()) fio.setToName(newName.getText().toString()+"/");
+                        else fio.setToName(newName.getText().toString());
                         fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
                         fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
                         mGp.fileioLinkParm.add(fio);
@@ -2018,6 +2012,7 @@ public class FileManager {
         ne.setListener(new NotifyEvent.NotifyEventListener() {
             @Override
             public void positiveResponse(Context c,Object[] t) {
+                mUtil.addDebugMsg(1,"I","deleteItem prepare begins.");
                 for (int i=fla.getCount()-1;i>=0;i--) {
                     FileListItem item = fla.getItem(i);
                     if (item.isChecked()) {
@@ -2026,13 +2021,15 @@ public class FileManager {
                             FileIoLinkParm fio=new FileIoLinkParm();
                             fio.setToDirectory(item.getPath());
                             fio.setToName(item.getName());
+                            fio.setToSafRoot(mGp.currentLocalStorage.storage_root);
                             mGp.fileioLinkParm.add(fio);
                         } else {
 //                            buildFileioLinkParm(mGp.fileioLinkParm,item.getPath(),
 //                                    "",item.getName(),"",mGp.smbUser,mGp.smbPass,true);
                             FileIoLinkParm fio=new FileIoLinkParm();
                             fio.setToDirectory(item.getPath());
-                            fio.setToName(item.getName());
+                            if (item.isDir()) fio.setToName(item.getName()+"/");
+                            else fio.setToName(item.getName());
                             fio.setToSmbLevel(mGp.currentSmbServerConfig.getSmbLevel());
                             fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
                             fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
@@ -2061,18 +2058,21 @@ public class FileManager {
     private ArrayList<FileListItem> pasteFromList=new ArrayList<FileListItem>();
     private String pasteFromUrl="", pasteItemList="", pasteFromBase="";
     private String pasteFromDomain="", pasteFromUser="", pasteFromPass="", pasteFromSmbLevel="";
+    private SafFile3 pasteFromSafRoot=null;
+    private SafFile3 pasteToSafRoot=null;
     private boolean pasteFromSmbIpc=false, pasteFromSmbSMB2Nego=false;
     private boolean isPasteCopy=false,isPasteEnabled=false, isPasteFromLocal=false;
     private void setCopyFrom(FileListAdapter fla) {
         pasteItemList="";
         if (mGp.currentTabName.equals(SMBEXPLORER_TAB_LOCAL)) {
-            pasteFromUrl=mGp.localBase+"/"+mGp.localDir;
+            pasteFromUrl="/"+mGp.localDirectory;
             isPasteFromLocal=true;
-            pasteFromBase=mGp.localBase;
+            pasteFromSafRoot=mGp.currentLocalStorage.storage_root;
+//            pasteFromBase=mGp.localBase;
         } else {
-            pasteFromUrl=mGp.remoteBase+"/"+mGp.remoteDir;;
+            pasteFromUrl=mGp.remoteMountpoint +"/"+mGp.remoteDirectory;;
             isPasteFromLocal=false;
-            pasteFromBase=mGp.remoteBase;
+            pasteFromBase=mGp.remoteMountpoint;
             pasteFromUser=mGp.currentSmbServerConfig.getSmbUser();
             pasteFromPass=mGp.currentSmbServerConfig.getSmbPass();
             pasteFromSmbLevel=mGp.currentSmbServerConfig.getSmbLevel();
@@ -2103,13 +2103,14 @@ public class FileManager {
     private void setCutFrom(FileListAdapter fla) {
         pasteItemList="";
         if (mGp.currentTabName.equals(SMBEXPLORER_TAB_LOCAL)) {
-            pasteFromUrl=mGp.localBase+"/"+mGp.localDir;
+            pasteFromUrl="/"+mGp.localDirectory;
             isPasteFromLocal=true;
-            pasteFromBase=mGp.localBase;
+            pasteFromSafRoot=mGp.currentLocalStorage.storage_root;
+//            pasteFromBase=mGp.localBase;
         } else {
-            pasteFromUrl=mGp.remoteBase+"/"+mGp.remoteDir;
+            pasteFromUrl=mGp.remoteMountpoint +"/"+mGp.remoteDirectory;
             isPasteFromLocal=false;
-            pasteFromBase=mGp.remoteBase;
+            pasteFromBase=mGp.remoteMountpoint;
             pasteFromUser=mGp.currentSmbServerConfig.getSmbUser();
             pasteFromPass=mGp.currentSmbServerConfig.getSmbPass();
             pasteFromSmbLevel=mGp.currentSmbServerConfig.getSmbLevel();
@@ -2152,11 +2153,11 @@ public class FileManager {
         boolean vp=false;
         if (isPasteEnabled) {
             if (mGp.currentTabName.equals(SMBEXPLORER_TAB_LOCAL)) {
-                vp=isValidPasteDestination(mGp.localBase,mGp.localDir);
+                vp=isValidPasteDestination("/"+mGp.currentLocalStorage.storage_root.getName(),mGp.localDirectory);
                 if (vp) mGp.localContextBtnPasteView.setVisibility(LinearLayout.VISIBLE);
                 else mGp.localContextBtnPasteView.setVisibility(LinearLayout.INVISIBLE);
             } else {
-                vp=isValidPasteDestination(mGp.remoteBase,mGp.remoteDir);
+                vp=isValidPasteDestination(mGp.remoteMountpoint,mGp.remoteDirectory);
                 if (vp) mGp.remoteContextBtnPasteView.setVisibility(LinearLayout.VISIBLE);
                 else mGp.remoteContextBtnPasteView.setVisibility(LinearLayout.INVISIBLE);
             }
@@ -2181,18 +2182,47 @@ public class FileManager {
 
     private boolean isValidPasteDestination(String base, String dir) {
         boolean result=false;
+        mUtil.addDebugMsg(1,"I", "isValidPasteDestination base="+base+", Dir="+dir);
 //		Log.v("","base="+base+", dir="+dir);
 //		Thread.currentThread().dumpStack();
         if (isPasteEnabled) {
             String to_dir="";
             if (dir.equals("")) to_dir=base;
-            else to_dir=base+"/"+dir;
-            String from_dir=pasteFromList.get(0).getPath();
-            String from_path=pasteFromList.get(0).getPath()+"/"+pasteFromList.get(0).getName();
-            if (!to_dir.equals(from_dir)) {
-                if (!from_path.equals(to_dir)) {
-                    if (!to_dir.startsWith(from_path)) {
-                        result=true;
+            else {
+                if (dir.startsWith("/")) to_dir=base+dir;
+                else to_dir=base+"/"+dir;
+            }
+            if (pasteFromSafRoot!=null && pasteFromSafRoot.isSafFile()) {
+                String from_dir = "/" + pasteFromSafRoot.getName() + pasteFromList.get(0).getPath();
+                String from_path = "/" + pasteFromSafRoot.getName() + pasteFromList.get(0).getPath() + "/" + pasteFromList.get(0).getName();
+                mUtil.addDebugMsg(1, "I", "isValidPasteDestination(Saf) from_dir=" + from_dir + ", from_path=" + from_path + ", to_dir=" + to_dir);
+                if (!to_dir.equals(from_dir)) {
+                    if (!from_path.equals(to_dir)) {
+                        if (!to_dir.startsWith(from_path)) {
+                            result = true;
+                        }
+                    }
+                }
+            } else if (pasteFromSafRoot!=null && !pasteFromSafRoot.isSafFile()) {
+                String from_dir = "/" + pasteFromSafRoot.getName() + pasteFromList.get(0).getPath();
+                String from_path = "/" + pasteFromSafRoot.getName() + pasteFromList.get(0).getPath() + "/" + pasteFromList.get(0).getName();
+                mUtil.addDebugMsg(1, "I", "isValidPasteDestination(Local) from_dir=" + from_dir + ", from_path=" + from_path + ", to_dir=" + to_dir);
+                if (!to_dir.equals(from_dir)) {
+                    if (!from_path.equals(to_dir)) {
+                        if (!to_dir.startsWith(from_path)) {
+                            result = true;
+                        }
+                    }
+                }
+            } else {
+                String from_dir=pasteFromList.get(0).getPath();
+                String from_path=pasteFromList.get(0).getPath()+"/"+pasteFromList.get(0).getName();
+                mUtil.addDebugMsg(1,"I", "isValidPasteDestination(Remote) from_dir="+from_dir+", from_path="+from_path+", to_dir="+to_dir);
+                if (!to_dir.equals(from_dir)) {
+                    if (!from_path.equals(to_dir)) {
+                        if (!to_dir.startsWith(from_path)) {
+                            result=true;
+                        }
                     }
                 }
             }
@@ -2241,7 +2271,7 @@ public class FileManager {
                 @Override
                 public void negativeResponse(Context c,Object[] o) {	}
             });
-            checkRemoteFileExists(mGp.remoteBase, d_list, mGp.currentSmbServerConfig, ntfy);
+            checkRemoteFileExists(mGp.remoteMountpoint, d_list, mGp.currentSmbServerConfig, ntfy);
         }
     }
 
@@ -2251,9 +2281,7 @@ public class FileManager {
             fi=pasteFromList.get(i);
             FileIoLinkParm fio=new FileIoLinkParm();
             fio.setFromDirectory(fi.getPath());
-            fio.setFromName(fi.getName());
             fio.setToDirectory(to_dir);
-            fio.setToName(fi.getName());
 
             if (fi.getPath().startsWith("smb://")) {
                 fio.setFromBaseDirectory(fi.getBaseUrl());
@@ -2262,19 +2290,31 @@ public class FileManager {
                 fio.setFromSmbLevel(pasteFromSmbLevel);
                 fio.setFromSmbOptionIpcSignEnforce(pasteFromSmbIpc);
                 fio.setFromSmbOptionUseSMB2Negotiation(pasteFromSmbSMB2Nego);
+                if (fi.isDir()) fio.setFromName(fi.getName()+"/");
+                else fio.setFromName(fi.getName());
             } else {
                 fio.setFromBaseDirectory(fi.getBaseUrl());
+                fio.setFromSafRoot(pasteFromSafRoot);
+                fio.setFromName(fi.getName());
             }
 
             if (to_dir.startsWith("smb://")) {
-                fio.setToBaseDirectory(mGp.remoteBase);
+                fio.setToBaseDirectory(mGp.remoteMountpoint);
                 fio.setToUser(mGp.currentSmbServerConfig.getSmbUser());
                 fio.setToPass(mGp.currentSmbServerConfig.getSmbPass());
                 fio.setToSmbLevel(mGp.currentSmbServerConfig.getSmbLevel());
                 fio.setToSmbOptionIpcSignEnforce(mGp.currentSmbServerConfig.isSmbOptionIpcSigningEnforced());
                 fio.setToSmbOptionUseSMB2Negotiation(mGp.currentSmbServerConfig.isSmbOptionUseSMB2Negotiation());
+                if (fi.isDir()) fio.setToName(fi.getName()+"/");
+                else fio.setToName(fi.getName());
             } else {
-                fio.setToBaseDirectory(mGp.localBase);
+                fio.setToSafRoot(mGp.currentLocalStorage.storage_root);
+//                fio.setToBaseDirectory(mGp.localBase);
+                if (fi.getPath().startsWith("smb://")) {
+                    fio.setToName(fi.getName()+"/");
+                } else {
+                    fio.setToName(fi.getName());
+                }
             }
 
             mGp.fileioLinkParm.add(fio);
@@ -2478,44 +2518,41 @@ public class FileManager {
         return result;
     }
 
-
-    final static public long getAllFileSizeInDirectory(File sd, boolean process_sub_directories) {
-        long dir_size=0;
-        if (sd.exists()) {
-            if (sd.isDirectory()) {
-                File[] cfl=sd.listFiles();
-                if (cfl!=null && cfl.length>0) {
-                    for(File cf:cfl) {
-                        if (cf.isDirectory()) {
-                            if (process_sub_directories)
-                                dir_size+=getAllFileSizeInDirectory(cf, process_sub_directories);
-                        } else {
-                            dir_size+=cf.length();
-                        }
+    final public long getAllFileSizeInDirectory(SafFile3 sd, boolean process_sub_directories, ContentProviderClient cpc) {
+        long dir_size=0l;
+        if (sd.exists(cpc)) {
+            if (sd.isDirectory(cpc)) {
+//                long b_time=System.currentTimeMillis();
+                SafFile3[] cfl=sd.listFiles(cpc);
+//                mUtil.addDebugMsg(1,"I","list children name="+sd.getName()+", elapsed="+(System.currentTimeMillis()-b_time));
+                for(SafFile3 cf:cfl) {
+                    if (cf.isDirectory(cpc)) {
+                        if (process_sub_directories)
+                            dir_size+=getAllFileSizeInDirectory(cf, process_sub_directories, cpc);
+                    } else {
+                        dir_size+=cf.length(cpc);
                     }
                 }
             } else {
-                dir_size+=sd.length();
+                dir_size+=sd.length(cpc);
             }
         }
         return dir_size;
     }
 
-    final public long getAllFileSizeInDirectory(SafFile sd, boolean process_sub_directories) {
+    final public long getAllFileSizeInDirectory(SafFile3 sd, boolean process_sub_directories) {
         long dir_size=0l;
         if (sd.exists()) {
             if (sd.isDirectory()) {
 //                long b_time=System.currentTimeMillis();
-                SafFile[] cfl=sd.listFiles();
+                SafFile3[] cfl=sd.listFiles();
 //                mUtil.addDebugMsg(1,"I","list children name="+sd.getName()+", elapsed="+(System.currentTimeMillis()-b_time));
-                if (cfl!=null && cfl.length>0) {
-                    for(SafFile cf:cfl) {
-                        if (cf.isDirectory()) {
-                            if (process_sub_directories)
-                                dir_size+=getAllFileSizeInDirectory(cf, process_sub_directories);
-                        } else {
-                            dir_size+=cf.length();
-                        }
+                for(SafFile3 cf:cfl) {
+                    if (cf.isDirectory()) {
+                        if (process_sub_directories)
+                            dir_size+=getAllFileSizeInDirectory(cf, process_sub_directories);
+                    } else {
+                        dir_size+=cf.length();
                     }
                 }
             } else {
@@ -2525,71 +2562,103 @@ public class FileManager {
         return dir_size;
     }
 
-    private void createLocalFileList(boolean dir_only, String url, NotifyEvent p_ntfy) {
-
-        mUtil.addDebugMsg(1,"I","create local file list local url=" + url);
-
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-
-        ArrayList<FileListItem> dir = new ArrayList<FileListItem>();
-        ArrayList<FileListItem> fls = new ArrayList<FileListItem>();
-
-        File sf = new File(url);
-
-        File[] file_list = sf.listFiles();
-        if (file_list!=null) {
-            try {
-                for (File ff : file_list) {
-                    FileListItem tfi=null;
-                    if (ff.canRead()) {
-                        if (ff.isDirectory()) {
-                            File tlf=new File(url+"/"+ff.getName());
-                            String[] tfl=tlf.list();
-                            int sdc=0;
-                            if (tfl!=null) sdc=tfl.length;
-                            int ll=0;
-                            tfi=createNewFilelistItem(mGp.localBase, ff, sdc, ll);
-                            dir.add(tfi);
-                        } else {
-                            tfi=createNewFilelistItem(mGp.localBase, ff, 0, 0);
-                            fls.add(tfi);
-                        }
-                        if (mGp.settingDebugLevel>=3) {
-                            mUtil.addDebugMsg(3,"I","File :" + tfi.getName()+", "+
-                                    "length: " + tfi.getLength()+", "+
-                                    "Lastmod: " + sdf.format(tfi.getLastModified())+", "+
-                                    "Lastmod: " + tfi.getLastModified()+", "+
-                                    "isdir: " + tfi.isDir()+", "+
-                                    "parent: " + ff.getParent()+", "+
-                                    "path: " + tfi.getPath()+", "+
-                                    "canonicalPath: " + ff.getCanonicalPath());
-                        }
+    final public long getAllFileSizeInDirectory(File sd, boolean process_sub_directories) {
+        long dir_size=0l;
+        if (sd.exists()) {
+            if (sd.isDirectory()) {
+//                long b_time=System.currentTimeMillis();
+                File[] cfl=sd.listFiles();
+//                mUtil.addDebugMsg(1,"I","list children name="+sd.getName()+", elapsed="+(System.currentTimeMillis()-b_time));
+                for(File cf:cfl) {
+                    if (cf.isDirectory()) {
+                        if (process_sub_directories)
+                            dir_size+=getAllFileSizeInDirectory(cf, process_sub_directories);
                     } else {
-                        tfi=createNewFilelistItem(mGp.localBase, ff, 0, 0);
-                        if (tfi.isDir()) dir.add(tfi);
-                        else fls.add(tfi);
+                        dir_size+=cf.length();
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                mUtil.addLogMsg("E",e.toString());
-                showDialogMsg("E",mContext.getString(R.string.msgs_local_file_list_create_error), e.getMessage());
-                dir=null;
+            } else {
+                dir_size+=sd.length();
             }
         }
-
-        if (dir!=null) {
-            FileListAdapter.sort(dir);
-            if (!dir_only) {
-                FileListAdapter.sort(fls);
-                dir.addAll(fls);
-            }
-        }
-        p_ntfy.notifyToListener(true, new Object[]{dir});
+        return dir_size;
     }
 
-    private void createUsbFileList(boolean dir_only, final String url, final NotifyEvent p_ntfy) {
-        mUtil.addDebugMsg(1,"I","create USB file list local url=" + url);
+    private void createFileApiFileList(boolean dir_only, String url, NotifyEvent p_ntfy) {
+        mUtil.addDebugMsg(1,"I","createFileApiFileList create file list started, dir=" + url);
+//        Thread.dumpStack();
+        final Dialog pd=CommonDialog.showProgressSpinIndicator(mActivity);
+        pd.show();
+        Thread th=new Thread(){
+            @Override
+            public void run() {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                ArrayList<FileListItem> dir = new ArrayList<FileListItem>();
+                ArrayList<FileListItem> fls = new ArrayList<FileListItem>();
+                SafFile3 sf = new SafFile3(mContext, url);
+                SafFile3[] file_list = sf.listFiles();
+                if (file_list!=null) {
+                    try {
+                        for (SafFile3 ff : file_list) {
+                            FileListItem tfi=null;
+                            if (ff.canRead()) {
+                                if (ff.isDirectory()) {
+                                    String[] tfl=ff.list();
+                                    int sdc=0;
+                                    if (tfl!=null) sdc=tfl.length;
+                                    int ll=0;
+                                    tfi=createNewFilelistItem("", ff, sdc, ll, true, url);
+                                    dir.add(tfi);
+                                } else {
+                                    tfi=createNewFilelistItem("", ff, 0, 0, false, url);
+                                    fls.add(tfi);
+                                }
+                                if (mUtil.getLogLevel()>=3) {
+                                    mUtil.addDebugMsg(3,"I","File :" + tfi.getName()+", "+
+                                            "length: " + tfi.getLength()+", "+
+                                            "Lastmod: " + sdf.format(tfi.getLastModified())+", "+
+                                            "Lastmod: " + tfi.getLastModified()+", "+
+                                            "isdir: " + tfi.isDir()+", "+
+                                            "path: " + tfi.getPath()+", ");
+                                }
+                            } else {
+                                tfi=createNewFilelistItem("", ff, 0, 0, false, url);
+                                if (tfi.isDir()) dir.add(tfi);
+                                else fls.add(tfi);
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        mUtil.addLogMsg("E",e.toString());
+                        showDialogMsg("E",mContext.getString(R.string.msgs_local_file_list_create_error), e.getMessage());
+                        dir=null;
+                    }
+                }
+
+                if (dir!=null) {
+                    FileListAdapter.sort(dir);
+                    if (!dir_only) {
+                        FileListAdapter.sort(fls);
+                        dir.addAll(fls);
+                    }
+                }
+                mUtil.addDebugMsg(1,"I","createFileApiFileList file list create ended");
+                final ArrayList<FileListItem> dir_final = dir;
+                mUiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        p_ntfy.notifyToListener(true, new Object[]{dir_final});
+                        pd.dismiss();
+                    }
+                });
+            }
+        };
+        th.start();
+    }
+
+    private void createSafApiFileList(final SafFile3 rf, boolean dir_only, final String url, final NotifyEvent p_ntfy) {
+//        Thread.dumpStack();
+        mUtil.addDebugMsg(1,"I","createSafApiFileList file list create started. dir=" + url);
 
         final ThreadCtrl tc = new ThreadCtrl();
         tc.setEnabled();
@@ -2600,7 +2669,7 @@ public class FileManager {
             @Override
             public void onCancel(DialogInterface arg0) {
                 tc.setDisabled();//disableAsyncTask();
-                mUtil.addDebugMsg(1, "W", "CreateUsbFileList cancelled.");
+                mUtil.addDebugMsg(1, "W", "createSafApiFileList cancelled.");
             }
         });
         dialog.show();
@@ -2610,52 +2679,40 @@ public class FileManager {
             @Override
             public void run(){
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-
+//                long b_time=System.currentTimeMillis();
                 ArrayList<FileListItem> dir = new ArrayList<FileListItem>();
                 ArrayList<FileListItem> fls = new ArrayList<FileListItem>();
-                SafFile sf=null;
-                if (url.equals(mGp.safMgr.getUsbRootPath())) sf=mGp.safMgr.getUsbRootSafFile();
-                else sf=mGp.safMgr.findUsbItem(url);
+                SafFile3 sf=new SafFile3(mContext, url);
+                ContentProviderClient cpc=sf.getContentProviderClient();
+//                mUtil.addDebugMsg(1,"I","list1 elapsed="+(System.currentTimeMillis()-b_time));
                 if (sf!=null) {
-                    SafFile[] file_list = sf.listFiles();
+                    SafFile3[] file_list = sf.listFiles(cpc);
                     if (file_list!=null) {
                         try {
-                            for (SafFile ff : file_list) {
+                            for (SafFile3 ff : file_list) {
+                                long b_time_s=System.currentTimeMillis();
                                 FileListItem tfi=null;
-                                if (ff.isDirectory()) {
-                                    String s_url="";
-                                    if (url.equals("")) s_url=ff.getName();
-                                    else s_url=url+"/"+ff.getName();
-                                    SafFile tlf=mGp.safMgr.findUsbItem(s_url);
-//                                    String[] sfl=tlf.list();
-//                                    for(String nm:sfl) mUtil.addDebugMsg(1,"I", "list="+nm);
-                                    SafFile[] tfl=tlf.listFiles();
+                                if (ff.isDirectory(cpc)) {
                                     int sdc=0;
-                                    if (tfl!=null) sdc=tfl.length;
                                     int ll=0;
-                                    tfi=createNewFilelistItem(mGp.localBase, ff, sdc, ll, true, url);
+                                    sdc=ff.getCount(cpc);
+                                    tfi=createSafNewFilelistItem("", ff, sdc, ll, true, url, cpc);
                                     dir.add(tfi);
                                 } else {
-                                    tfi=createNewFilelistItem(mGp.localBase, ff, 0, 0, false, url);
+                                    tfi=createSafNewFilelistItem("", ff, 0, 0, false, url, cpc);
                                     fls.add(tfi);
                                 }
-                                mUtil.addDebugMsg(3,"I","File :" + tfi.getName()+", "+
-                                        "length: " + tfi.getLength()+", "+
-                                        "Lastmod: " + sdf.format(tfi.getLastModified())+", "+
-                                        "Lastmod: " + tfi.getLastModified()+", "+
-                                        "isdir: " + tfi.isDir()+", "+
-                                        "parent: " + //ff.getParent()+", "+
-                                        "path: " + tfi.getPath()+", "+
-                                        "canonicalPath: ");//+ ff.getCanonicalPath());
+//                                mUtil.addDebugMsg(1,"I","fp="+ff.getPath()+", elapse="+(System.currentTimeMillis()-b_time_s));
                             }
+//                            mUtil.addDebugMsg(1,"I","list2 elapsed="+(System.currentTimeMillis()-b_time));
                         } catch (Exception e) {
                             e.printStackTrace();
-                            mUtil.addDebugMsg(0,"E",e.toString());
+                            mUtil.addDebugMsg(1,"E",e.toString());
                             showDialogMsg("E",mContext.getString(R.string.msgs_local_file_list_create_error), e.getMessage());
                             dir=null;
                         }
                     }
-
+                    cpc.release();
                     if (dir!=null) {
                         FileListAdapter.sort(dir);
                         if (!dir_only) {
@@ -2663,6 +2720,7 @@ public class FileManager {
                             dir.addAll(fls);
                         }
                     }
+                    mUtil.addDebugMsg(1,"I","createSafApiFileList file list create ended");
                     final Object[] result=new Object[]{dir};
                     hndl.post(new Runnable(){
                         @Override
@@ -2680,6 +2738,7 @@ public class FileManager {
 
     private void createRemoteFileList(String opcd, final String url, final NotifyEvent parent_event) {
         mUtil.addDebugMsg(1,"I","Create remote filelist remote url:"+url);
+//        Thread.dumpStack();
         final NotifyEvent n_event=new NotifyEvent(mContext);
         n_event.setListener(new NotifyEvent.NotifyEventListener() {
             @Override
@@ -2698,12 +2757,12 @@ public class FileManager {
                     } else {
                         if (sf_item.get(i).canRead()) {
                             if (sf_item.get(i).isDir()) {
-                                dir.add(createNewFilelistItem(mGp.remoteBase, sf_item.get(i)));
+                                dir.add(createNewFilelistItem(mGp.remoteMountpoint, sf_item.get(i)));
                             } else {
-                                fls.add(createNewFilelistItem(mGp.remoteBase, sf_item.get(i)));
+                                fls.add(createNewFilelistItem(mGp.remoteMountpoint, sf_item.get(i)));
                             }
                         } else {
-                            fls.add(createNewFilelistItem(mGp.remoteBase, sf_item.get(i)));
+                            fls.add(createNewFilelistItem(mGp.remoteMountpoint, sf_item.get(i)));
                         }
                     }
                 }
@@ -2720,7 +2779,7 @@ public class FileManager {
                         mContext.getString(R.string.msgs_remote_file_list_create_error),(String)o[0]);
             }
         });
-        SmbServerUtil.createSmbServerFileList(mActivity, mGp, opcd, url+"/", mGp.currentSmbServerConfig,n_event);
+        SmbServerUtil.createSmbServerFileList(mActivity, mGp, opcd, url, mGp.currentSmbServerConfig,n_event);
 
     }
 
@@ -2828,29 +2887,19 @@ public class FileManager {
         mGp.localProgressView.setVisibility(LinearLayout.GONE);
     }
 
-    private ArrayList<GlobalParameters.LocalStorageConfig> createLocalProfileEntry() {
-        ArrayList<GlobalParameters.LocalStorageConfig> lcl = new ArrayList<GlobalParameters.LocalStorageConfig>();
-
-        String pml= LocalMountPoint.getExternalStorageDir();
-        GlobalParameters.LocalStorageConfig lstg=new GlobalParameters.LocalStorageConfig();
-        lstg.storage_name="Internal Storage";
-        lstg.storage_path=pml;
-        lcl.add(lstg);
-
-        if(mGp.safMgr.isSdcardMounted()) {
-            lstg=new GlobalParameters.LocalStorageConfig();
-            lstg.storage_name="SDCARD";
-            lstg.storage_path=mGp.safMgr.getSdcardRootPath();
+    private ArrayList<LocalStorage> createLocalProfileEntry() {
+        ArrayList<LocalStorage> lcl = new ArrayList<LocalStorage>();
+        ArrayList<SafStorage3>svl=mGp.safMgr.getSafStorageList();
+        for(SafStorage3 sli:svl) {
+            LocalStorage lstg=new LocalStorage();
+            lstg.storage_saf_file =sli.isSafFile;
+            lstg.storage_name=sli.description;
+            lstg.storage_root=sli.saf_file;
+            lstg.storage_app_directory=sli.appDirectory;
+            lstg.storage_mount_point ="";
+            lstg.storage_id=sli.saf_file.getUuid();
             lcl.add(lstg);
         }
-
-        if(mGp.safMgr.isUsbMounted()) {
-            lstg=new GlobalParameters.LocalStorageConfig();
-            lstg.storage_name="USB Flash";
-            lstg.storage_path=mGp.safMgr.getUsbRootPath();
-            lcl.add(lstg);
-        }
-
         return lcl;
     }
 
@@ -2883,29 +2932,35 @@ public class FileManager {
         return fi;
     }
 
-    public FileListItem createNewFilelistItem(String base_url, SafFile tfli, int sdc, int ll, boolean dir, String parent) {
+    public FileListItem createNewFilelistItem(String base_url, SafFile3 tfli, int sdc, int ll, boolean dir, String parent) {
+//        Thread.dumpStack();
         if (dir) {
-            final FileListItem fi= new FileListItem(tfli.getName(),
+            String fn=tfli.getName();
+            boolean is_hidden=fn.startsWith(".")?true:false;
+            final FileListItem fi= new FileListItem(fn,
                     true,
                     -1,
                     tfli.lastModified(),
                     false,
                     true, false,//tfli.canRead(),tfli.canWrite(),
-                    false, parent, //tfli.isHidden(),tfli.getParent(),
+                    is_hidden, parent, //tfli.isHidden(),tfli.getParent(),
                     ll);
             fi.setSubDirItemCount(sdc);
             fi.setBaseUrl(base_url);;
             Thread th=new Thread(){
                 @Override
                 public void run() {
-//                    mUtil.addDebugMsg(1,"I","calcurate started name=" + tfli.getName());
-                    long dir_size=getAllFileSizeInDirectory(tfli, true);
-                    fi.setLength(dir_size);
-//                    mUtil.addDebugMsg(1,"I","calcurate ended name=" + tfli.getName());
+                    SafFile3 lf=new SafFile3(mContext, tfli.getPath());
+                    if (lf.canRead()) {
+                        long dir_size=getAllFileSizeInDirectory(lf, true);
+                        fi.setLength(dir_size);
+                    } else {
+                        long dir_size=getAllFileSizeInDirectory(tfli, true);
+                        fi.setLength(dir_size);
+                    }
                     mUiHandler.post(new Runnable(){
                         @Override
                         public void run(){
-//                            mUtil.addDebugMsg(1,"I","refresh adapter name=" + tfli.getName());
                             mGp.localFileListAdapter.notifyDataSetChanged();
                         }
                     }) ;
@@ -2914,13 +2969,16 @@ public class FileManager {
             th.start();
             return fi;
         } else {
-            FileListItem fi=new FileListItem(tfli.getName(),
+            long[] lmod_length=tfli.getLastModifiedAndLength();
+            String fn=tfli.getName();
+            boolean is_hidden=fn.startsWith(".")?true:false;
+            FileListItem fi=new FileListItem(fn,
                     false,
-                    tfli.length(),
-                    tfli.lastModified(),
+                    lmod_length[1],
+                    lmod_length[0],
                     false,
                     true,false,//tfli.canRead(),tfli.canWrite(),
-                    false, parent,//tfli.isHidden(),tfli.getParent(),
+                    is_hidden, parent,//tfli.isHidden(),tfli.getParent(),
                     ll);
             fi.setBaseUrl(base_url);;
             return fi;
@@ -2928,44 +2986,73 @@ public class FileManager {
 
     }
 
-    public FileListItem createNewFilelistItem(String base_url, final File tfli, int sdc, int ll) {
-        if (tfli.isDirectory()) {
+    public FileListItem createSafNewFilelistItem(String base_url, SafFile3 tfli, int sdc, int ll, boolean dir, String parent, ContentProviderClient cpc) {
+//        Thread.dumpStack();
+        String fn=tfli.getName();
+        boolean is_hidden=fn.startsWith(".")?true:false;
+        if (dir) {
             final FileListItem fi= new FileListItem(tfli.getName(),
                     true,
                     -1,
-                    tfli.lastModified(),
+                    tfli.lastModified(cpc),
                     false,
-                    tfli.canRead(),tfli.canWrite(),
-                    tfli.isHidden(),tfli.getParent(),
+                    true, false,//tfli.canRead(),tfli.canWrite(),
+                    is_hidden, parent, //tfli.isHidden(),tfli.getParent(),
                     ll);
             fi.setSubDirItemCount(sdc);
-            fi.setBaseUrl(base_url);
-            final Handler hndl=new Handler();
+            fi.setBaseUrl(base_url);;
             Thread th=new Thread(){
                 @Override
                 public void run() {
-                    long dir_size=getAllFileSizeInDirectory(tfli, true);
-                    fi.setLength(dir_size);
-                    hndl.post(new Runnable(){
-                       @Override
-                       public void run(){
-                           mGp.localFileListAdapter.notifyDataSetChanged();
-                       }
+                    SafFile3 lf=new SafFile3(mContext, tfli.getPath());
+                    if (lf.canRead()) {
+                        long dir_size=getAllFileSizeInDirectory(lf, true, cpc);
+                        fi.setLength(dir_size);
+                    } else {
+                        long dir_size=getAllFileSizeInDirectory(tfli, true, cpc);
+                        fi.setLength(dir_size);
+                    }
+                    mUiHandler.post(new Runnable(){
+                        @Override
+                        public void run(){
+                            mGp.localFileListAdapter.notifyDataSetChanged();
+                        }
                     }) ;
                 }
             };
+            th.setPriority(Thread.MAX_PRIORITY);
             th.start();
             return fi;
         } else {
             final FileListItem fi=new FileListItem(tfli.getName(),
                     false,
-                    tfli.length(),
-                    tfli.lastModified(),
+                    -1,//lmod_length[1],
+                    0,//lmod_length[0],
                     false,
-                    tfli.canRead(),tfli.canWrite(),
-                    tfli.isHidden(),tfli.getParent(),
+                    true,false,//tfli.canRead(),tfli.canWrite(),
+                    is_hidden, parent,//tfli.isHidden(),tfli.getParent(),
                     ll);
-            fi.setBaseUrl(base_url);
+            fi.setBaseUrl(base_url);;
+            long[] lmod_length=tfli.getLastModifiedAndLength(cpc);
+            fi.setLength(lmod_length[1]);
+            fi.setLastModified(lmod_length[0]);
+
+//            Thread th=new Thread(){
+//                @Override
+//                public void run() {
+//                    long[] lmod_length=tfli.getLastModifiedAndLength(cpc);
+//                    fi.setLength(lmod_length[1]);
+//                    fi.setLastModified(lmod_length[0]);
+//                    mUiHandler.post(new Runnable(){
+//                        @Override
+//                        public void run(){
+//                            mGp.localFileListAdapter.notifyDataSetChanged();
+//                        }
+//                    }) ;
+//                }
+//            };
+//            th.setPriority(Thread.MAX_PRIORITY);
+//            th.start();
             return fi;
         }
     }
@@ -3005,6 +3092,4 @@ public class FileManager {
         }
         return fi;
     }
-
-
 }

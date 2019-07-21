@@ -126,7 +126,7 @@ public class MainService extends Service {
 //                action.equals(Intent.ACTION_MEDIA_EJECT) ||
 //                action.equals(Intent.ACTION_MEDIA_REMOVED) ||
                 action.equals(Intent.ACTION_MEDIA_UNMOUNTED)) {
-            mGp.safMgr.loadSafFileNoUsbMountPoint();
+            mGp.safMgr.buildSafFileList();
             notifyToMediaStatusChanged();
         } else if (action.equals(SERVICE_HEART_BEAT)) {
 //            mUtil.addDebugMsg(1,"I","onStartCommand entered, action="+action);
@@ -171,7 +171,7 @@ public class MainService extends Service {
         unregisterReceiver(mMediaReceiver);
         cancelHeartBeat();
         stopForeground(true);
-        LogUtil.flushLog(mContext, mGp);
+        LogUtil.flushLog(mContext);
         if (mGp.settingExitClean) {
             Handler hndl=new Handler();
             hndl.postDelayed(new Runnable(){
@@ -330,7 +330,7 @@ public class MainService extends Service {
 //                action.equals(Intent.ACTION_MEDIA_EJECT) ||
 //                action.equals(Intent.ACTION_MEDIA_REMOVED) ||
                     action.equals(Intent.ACTION_MEDIA_UNMOUNTED)) {
-                mGp.safMgr.loadSafFileNoUsbMountPoint();
+                mGp.safMgr.buildSafFileList();
                 notifyToMediaStatusChanged();
             }
         }

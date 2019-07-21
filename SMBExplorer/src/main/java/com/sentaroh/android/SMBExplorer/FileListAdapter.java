@@ -15,9 +15,10 @@ import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.TextView;
 
-import com.sentaroh.android.Utilities.NotifyEvent;
-import com.sentaroh.android.Utilities.ThemeColorList;
-import com.sentaroh.android.Utilities.ThemeUtil;
+
+import com.sentaroh.android.Utilities2.NotifyEvent;
+import com.sentaroh.android.Utilities2.ThemeColorList;
+import com.sentaroh.android.Utilities2.ThemeUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,7 +43,7 @@ public class FileListAdapter extends BaseAdapter {
 	public FileListAdapter(Context context) {
 		mContext = context;
 		mDataItems=new ArrayList<FileListItem>();
-		mThemeColorList=ThemeUtil.getThemeColorList(mContext);
+		mThemeColorList= ThemeUtil.getThemeColorList(mContext);
 	};
 
 	public FileListAdapter(Context context, boolean singleSelectMode, boolean showLastModified) {

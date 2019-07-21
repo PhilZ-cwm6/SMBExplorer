@@ -31,7 +31,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 
-import com.sentaroh.android.Utilities.NotifyEvent;
+import com.sentaroh.android.Utilities2.NotifyEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -18,9 +18,9 @@ import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import com.sentaroh.android.Utilities.Dialog.CommonDialog;
-import com.sentaroh.android.Utilities.NotifyEvent;
-import com.sentaroh.android.Utilities.Widget.CustomSpinnerAdapter;
+import com.sentaroh.android.Utilities2.Dialog.CommonDialog;
+import com.sentaroh.android.Utilities2.NotifyEvent;
+import com.sentaroh.android.Utilities2.Widget.CustomSpinnerAdapter;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -308,7 +308,7 @@ public class SmbServerEditor {
         setSpinnerBackground(mContext, spinner, false);
         final CustomSpinnerAdapter adapter =
                 new CustomSpinnerAdapter(mContext, android.R.layout.simple_spinner_item);
-        mGp.safMgr.loadSafFile();
+        mGp.safMgr.buildSafFileList();
         adapter.setDropDownViewResource(android.R.layout.select_dialog_singlechoice);
         spinner.setPrompt("Select SMB protocol");
         spinner.setAdapter(adapter);
@@ -317,7 +317,7 @@ public class SmbServerEditor {
         adapter.add("SMB1");
         adapter.add("SMB201");
         adapter.add("SMB211");
-        adapter.add("SMB212");
+        adapter.add("SMB213");
 
         if (cv.equals("1")) spinner.setSelection(0);
         else if (cv.equals("2")) spinner.setSelection(1);

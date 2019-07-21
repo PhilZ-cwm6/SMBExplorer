@@ -11,8 +11,8 @@ import android.os.Build;
 import android.os.PowerManager;
 
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
-import com.sentaroh.android.Utilities.MiscUtil;
-import com.sentaroh.android.Utilities.StringUtil;
+import com.sentaroh.android.Utilities2.MiscUtil;
+import com.sentaroh.android.Utilities2.StringUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,11 +33,11 @@ public class MainReceiver extends BroadcastReceiver {
     final public void onReceive(Context c, Intent received_intent) {
         mContext = c;
         if (mGp == null) {
-            mGp = GlobalWorkArea.getGlobalParameters(c);
+            mGp = GlobalWorkArea.getAllocatedGlobalParameters();
         }
         String action = received_intent.getAction();
         slf4jLog.info("Receiver action="+action);
-        if (action != null) {
+        if (action != null && mContext!=null && mGp!=null) {
             if (action.equals(Intent.ACTION_BOOT_COMPLETED)) {
                 mGp.setUsbMediaPath("");
             } else if (action.equals(UsbManager.ACTION_USB_DEVICE_ATTACHED)) {

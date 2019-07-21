@@ -39,11 +39,12 @@ import android.widget.TabWidget;
 import android.widget.TextView;
 
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
-import com.sentaroh.android.Utilities.CommonGlobalParms;
-import com.sentaroh.android.Utilities.Dialog.CommonDialog;
-import com.sentaroh.android.Utilities.SafManager;
-import com.sentaroh.android.Utilities.ThemeColorList;
-import com.sentaroh.android.Utilities.Widget.CustomTextView;
+import com.sentaroh.android.Utilities2.Dialog.CommonDialog;
+import com.sentaroh.android.Utilities2.LogUtil.CommonLogParameters;
+import com.sentaroh.android.Utilities2.LogUtil.CommonLogParametersFactory;
+import com.sentaroh.android.Utilities2.SafManager3;
+import com.sentaroh.android.Utilities2.ThemeColorList;
+import com.sentaroh.android.Utilities2.Widget.NonWordwrapTextView;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,29 +52,26 @@ import org.slf4j.LoggerWriter;
 
 import java.util.ArrayList;
 
-import static com.sentaroh.android.SMBExplorer.Constants.APPLICATION_TAG;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_LOCAL;
 
-public class GlobalParameters extends CommonGlobalParms{
+public class GlobalParameters{
 	public Context context =null;
 	public String internalRootDirectory="";
     public String internalAppSpecificDirectory="";
     public CommonDialog commonDlg=null;
     public CommonUtilities mUtil=null;
 
-    public SafManager safMgr =null;
+    public SafManager3 safMgr =null;
 
-    public String remoteBase = "", localBase = "";
-    public String remoteDir = "", localDir = "";
+    public String remoteMountpoint = "";//, localBase = "";
+    public String remoteDirectory = "", localDirectory = "";
+
+    public LocalStorage currentLocalStorage=null;
 
     public boolean wifiIsActive=false;
     public String wifiSsid="";
 
-    public static class LocalStorageConfig {
-        public String storage_name="";
-        public String storage_path="";
-    }
-    public ArrayList<LocalStorageConfig>localStorageConfig=new ArrayList<LocalStorageConfig>();
+    public ArrayList<LocalStorage> localStorageList =new ArrayList<LocalStorage>();
 //    public String smbUser=null, smbPass=null;
     public SmbServerConfig currentSmbServerConfig =null;
     public ThemeColorList themeColorList;
@@ -134,13 +132,13 @@ public class GlobalParameters extends CommonGlobalParms{
     public ImageButton remoteContextBtnUnselectAll =null;
     public LinearLayout remoteContextBtnUnselectAllView =null;
 
-    public CustomTextView localFileListPath=null;
+    public NonWordwrapTextView localFileListPath=null;
     public TextView localFileListEmptyView=null;
     public Button localFileListUpBtn=null, localFileListTopBtn=null;
 
     public int dialogBackgroundColor=0xff111111;
 
-    public CustomTextView remoteFileListPath=null;
+    public NonWordwrapTextView remoteFileListPath=null;
     public TextView remoteFileListEmptyView=null;
     public Button remoteFileListUpBtn=null;
     public Button remoteFileListTopBtn=null;
@@ -174,12 +172,7 @@ public class GlobalParameters extends CommonGlobalParms{
 
 //	Settings parameter
     public boolean settingExitClean=true;
-    public int     settingDebugLevel=0;
     public boolean settingUseLightTheme=false;
-    public int     settingLogMaxFileCount=10;
-    public String  settingLogMsgDir="", settingLogMsgFilename="SMBExplorerLog";
-    public boolean settingLogOption=false;
-    public boolean settingPutLogcatOption=false;
 
     public boolean settingsVideoPlaybackKeepAspectRatio=true;//Vide player
 
@@ -191,60 +184,30 @@ public class GlobalParameters extends CommonGlobalParms{
 
     private static Logger slf4jLog = LoggerFactory.getLogger(GlobalParameters.class);
 
+    public String AppSpecificDirectory="/Android/data/com.sentaroh.android.SMBExplorer/files";
+
 	public void  initGlobalParameter(Context c) {
         context =c;
+        safMgr =new SafManager3(c);
 
-        internalRootDirectory= Environment.getExternalStorageDirectory().toString();
-        internalAppSpecificDirectory=internalRootDirectory+"/Android/data/com.sentaroh.android.SMBExplorer/files";
+//        internalRootDirectory= Environment.getExternalStorageDirectory().toString();
+//        internalAppSpecificDirectory=internalRootDirectory+AppSpecificDirectory;
+        internalAppSpecificDirectory=c.getExternalFilesDirs(null)[0].toString();
+        internalRootDirectory= internalAppSpecificDirectory.substring(0, internalAppSpecificDirectory.indexOf("/Android/data/"));
 
-        final LogUtil jcifs_ng_lu = new LogUtil(c, "SLF4J", this);
+        CommonLogParameters clog= CommonLogParametersFactory.getLogParms(c);
+
+        final LogUtil jcifs_ng_lu = new LogUtil(c, "SLF4J");
         JcifsNgLogWriter jcifs_ng_lw=new JcifsNgLogWriter(jcifs_ng_lu);
         slf4jLog.setWriter(jcifs_ng_lw);
 
         loadSettingsParm(c);
 
-        safMgr =new SafManager(true, c, settingDebugLevel>0);
 
-		setLogParms(this);
 	};
 	
 	public void loadSettingsParm(Context c) {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
-
-        settingDebugLevel=Integer.parseInt(prefs.getString(c.getString(R.string.settings_log_level), "0"));
-        settingLogMaxFileCount=Integer.valueOf(prefs.getString(c.getString(R.string.settings_log_file_max_count), "10"));
-        settingLogMsgDir=prefs.getString(c.getString(R.string.settings_log_dir),internalRootDirectory+"/"+APPLICATION_TAG+"/");
-        settingLogOption=prefs.getBoolean(c.getString(R.string.settings_log_option), false);
-        settingPutLogcatOption=prefs.getBoolean(c.getString(R.string.settings_put_logcat_option), false);
-        setLogParms(this);
-
-        if (settingDebugLevel==0) {
-            slf4jLog.setLogOption(false, true, false, false, false);
-        } else if (settingDebugLevel==1) {
-            slf4jLog.setLogOption(false, true, true, false, false);
-        } else if (settingDebugLevel==2) {
-            slf4jLog.setLogOption(true, true, true, true, true);
-        } else if (settingDebugLevel==3) {
-            slf4jLog.setLogOption(true, true, true, true, true);
-        }
-    }
-
-    public void setSettingOptionLogEnabled(Context c, boolean enabled) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
-        prefs.edit().putBoolean(c.getString(R.string.settings_log_option), enabled).commit();
-        this.settingLogOption=enabled;
-        setLogParms(this);
-    }
-
-    public void setLogParms(GlobalParameters gp) {
-        setDebugLevel(gp.settingDebugLevel);
-        setLogcatEnabled(gp.settingPutLogcatOption);
-        setLogLimitSize(2*1024*1024);
-        setLogMaxFileCount(gp.settingLogMaxFileCount);
-        setLogEnabled(gp.settingLogOption);
-        setLogDirName(gp.settingLogMsgDir);
-        setLogFileName(gp.settingLogMsgFilename);
-        setApplicationTag(APPLICATION_TAG);
 
     }
 

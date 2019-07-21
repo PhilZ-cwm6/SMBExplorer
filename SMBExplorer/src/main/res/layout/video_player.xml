@@ -24,7 +24,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
 
-        <com.sentaroh.android.Utilities.Widget.CustomTextView
+        <com.sentaroh.android.Utilities2.Widget.NonWordwrapTextView
             android:id="@+id/video_player_dlg_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -72,38 +72,13 @@
         </LinearLayout>
 
         <ImageButton
-            android:id="@+id/video_player_dlg_delete"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_alignParentStart="true"
-            android:layout_below="@+id/video_player_dlg_title"
-            android:scaleType="centerCrop"
-            android:src="@drawable/menu_trash" />
-
-        <ImageButton
-            android:id="@+id/video_player_dlg_next"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_above="@+id/linearLayout1"
-            android:layout_alignParentRight="true"
-            android:scaleType="fitCenter"
-            android:src="@drawable/next_file_enabled" />
-
-        <ImageButton
-            android:id="@+id/video_player_dlg_prev"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_alignParentLeft="true"
-            android:layout_alignTop="@+id/video_player_dlg_next"
-            android:scaleType="fitCenter"
-            android:src="@drawable/prev_file_enabled" />
-
-        <ImageButton
             android:id="@+id/video_player_dlg_start_stop"
             android:layout_width="60dp"
             android:layout_height="60dp"
-            android:layout_above="@+id/video_player_dlg_backward"
+            android:layout_alignBottom="@id/linearLayout1"
             android:layout_alignParentEnd="true"
+            android:layout_marginEnd="5dp"
+            android:layout_marginBottom="121dp"
             android:scaleType="centerCrop"
             android:src="@drawable/player_play_disabled" />
 
@@ -111,8 +86,10 @@
             android:id="@+id/video_player_dlg_forward"
             android:layout_width="60dp"
             android:layout_height="60dp"
+            android:layout_alignBottom="@id/linearLayout1"
             android:layout_alignParentRight="true"
-            android:layout_below="@+id/video_player_dlg_start_stop"
+            android:layout_marginRight="5dp"
+            android:layout_marginBottom="41dp"
             android:scaleType="centerCrop"
             android:src="@drawable/player_fast_forward_disabled" />
 
@@ -120,8 +97,10 @@
             android:id="@+id/video_player_dlg_backward"
             android:layout_width="60dp"
             android:layout_height="60dp"
-            android:layout_above="@+id/video_player_dlg_next"
             android:layout_alignParentStart="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="4dp"
+            android:layout_marginBottom="39dp"
             android:scaleType="centerCrop"
             android:src="@drawable/player_fast_backward_disabled" />
 
@@ -138,8 +117,10 @@
             android:id="@+id/video_player_dlg_capture"
             android:layout_width="60dp"
             android:layout_height="60dp"
+            android:layout_alignParentTop="true"
             android:layout_alignParentEnd="true"
-            android:layout_below="@+id/video_player_dlg_title"
+            android:layout_marginTop="33dp"
+            android:layout_marginEnd="5dp"
             android:scaleType="centerCrop"
             android:src="@drawable/capture_enabled" />
 
@@ -148,7 +129,9 @@
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_alignParentStart="true"
-            android:layout_alignTop="@+id/video_player_dlg_start_stop"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="4dp"
+            android:layout_marginBottom="116dp"
             android:scaleType="centerCrop"
             android:src="@drawable/context_button_share" />
 

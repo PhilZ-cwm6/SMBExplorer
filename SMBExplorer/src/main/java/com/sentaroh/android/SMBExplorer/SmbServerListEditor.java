@@ -45,9 +45,9 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.sentaroh.android.Utilities.ContextButton.ContextButtonUtil;
-import com.sentaroh.android.Utilities.Dialog.CommonDialog;
-import com.sentaroh.android.Utilities.NotifyEvent;
+import com.sentaroh.android.Utilities2.ContextButton.ContextButtonUtil;
+import com.sentaroh.android.Utilities2.Dialog.CommonDialog;
+import com.sentaroh.android.Utilities2.NotifyEvent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -203,7 +203,7 @@ public class SmbServerListEditor {
                 mSmbServerListAdapter.sort();
                 mGp.smbConfigList.clear();
                 mGp.smbConfigList.addAll(mSmbConfigList);
-                SmbServerUtil.saveSmbServerConfigList(mGp);
+                SmbServerUtil.saveSmbServerConfigList(mContext, mGp);
                 SmbServerUtil.updateSmbShareSpinner(mGp);
                 SmbServerUtil.replaceCurrentSmbServerConfig(mGp);
                 mDialog.dismiss();

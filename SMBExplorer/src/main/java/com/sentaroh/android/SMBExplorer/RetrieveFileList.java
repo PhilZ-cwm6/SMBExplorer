@@ -30,8 +30,9 @@ import java.util.List;
 import android.os.Handler;
 import android.util.Log;
 
-import com.sentaroh.android.Utilities.NotifyEvent;
-import com.sentaroh.android.Utilities.ThreadCtrl;
+import com.sentaroh.android.SMBExplorer.Log.LogUtil;
+import com.sentaroh.android.Utilities2.NotifyEvent;
+import com.sentaroh.android.Utilities2.ThreadCtrl;
 import com.sentaroh.jcifs.JcifsAuth;
 import com.sentaroh.jcifs.JcifsException;
 import com.sentaroh.jcifs.JcifsFile;
@@ -56,13 +57,17 @@ public class RetrieveFileList extends Thread  {
 	
 	private GlobalParameters mGp=null;
 
+	private LogUtil mLog=null;
+
     private SmbServerConfig mSmbServerConfig=null;
 
 	private int mSmbLevel =JcifsAuth.JCIFS_FILE_SMB211;
 	public RetrieveFileList(GlobalParameters gp, ThreadCtrl ac, String ru, List<String> d_list, SmbServerConfig sc, NotifyEvent ne) {
 //		currContext=c;
 		mGp=gp;
-		
+
+        mLog=new LogUtil(gp.context, "CheckSmb");
+
 		getFLCtrl=ac; //new SMBExplorerThreadCtrl();
 		notifyEvent=ne;
 		remoteUrl=ru;
@@ -90,7 +95,9 @@ public class RetrieveFileList extends Thread  {
 			ThreadCtrl ac, String opcd, String ru, ArrayList<FileListItem> fl, SmbServerConfig sc, NotifyEvent ne) {
 		mGp=gp;
 		remoteFileList=fl;
-		
+
+        mLog=new LogUtil(gp.context, "ReadSmb");
+
 		uiHandler=new Handler();
 
 		getFLCtrl=ac; //new SMBExplorerThreadCtrl();
@@ -110,8 +117,8 @@ public class RetrieveFileList extends Thread  {
 	@Override
 	public void run() {
 		getFLCtrl.setThreadResultSuccess();
-		
-		sendDebugLogMsg(1,"I","getFileList started");
+
+        mLog.addDebugMsg(1,"I","getFileList started");
 
 		defaultUEH = Thread.currentThread().getUncaughtExceptionHandler();
         Thread.currentThread().setUncaughtExceptionHandler(unCaughtExceptionHandler);
@@ -158,7 +165,7 @@ public class RetrieveFileList extends Thread  {
 			}
 			
 		}
-		sendDebugLogMsg(1,"I","getFileList terminated.");
+        mLog.addDebugMsg(1,"I","getFileList terminated.");
 		uiHandler.post(new Runnable(){
 			@Override
 			public void run() {
@@ -205,7 +212,7 @@ public class RetrieveFileList extends Thread  {
     
 	private ArrayList<FileListItem> readShareList(String url) {
 		ArrayList<FileListItem> rem_list=new ArrayList<FileListItem>();
-		sendDebugLogMsg(2,"I","Filelist directory: "+url);
+        mLog.addDebugMsg(2,"I","Filelist directory: "+url);
 		try {		
 			JcifsFile remoteFile = new JcifsFile(url, mJcifsAuth);
 			JcifsFile[] fl = remoteFile.listFiles();
@@ -229,7 +236,7 @@ public class RetrieveFileList extends Thread  {
 								dirct=tfl.length;
 							}
 						} catch (JcifsException e) {
-							sendDebugLogMsg(0,"I","File ignored by exception: "+e.toString()+", "+ "Name="+fn);
+                            mLog.addLogMsg("I","File ignored by exception: "+e.toString()+", "+ "Name="+fn);
 						}					
 						FileListItem fi=new FileListItem(
 								fn,
@@ -244,23 +251,23 @@ public class RetrieveFileList extends Thread  {
 						fi.setSubDirItemCount(dirct);
 						fi.setHasExtendedAttr(has_ea);
 						rem_list.add(fi);
-						sendDebugLogMsg(2,"I","Filelist added: "+ "Name="+fn+", ");
+                        mLog.addDebugMsg(2,"I","Filelist added: "+ "Name="+fn+", ");
 					}
 				} else {
 					getFLCtrl.setThreadResultCancelled();
-					sendDebugLogMsg(-1,"W","Cancelled by main task.");
+                    mLog.addLogMsg("W","Cancelled by main task.");
 					break;
 				}
 			}
 		} catch (JcifsException e) {
 			e.printStackTrace();
-			sendDebugLogMsg(0,"E",e.toString());
+            mLog.addDebugMsg(1,"E",e.toString());
 			getFLCtrl.setThreadResultError();
 			getFLCtrl.setDisabled();
 			getFLCtrl.setThreadMessage(e.toString());
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
-			sendDebugLogMsg(0,"E",e.toString());
+            mLog.addDebugMsg(1,"E",e.toString());
 			getFLCtrl.setThreadResultError();
 			getFLCtrl.setDisabled();
 			getFLCtrl.setThreadMessage(e.toString());
@@ -270,14 +277,16 @@ public class RetrieveFileList extends Thread  {
 
     private ArrayList<FileListItem> readFileList(String url) {
         ArrayList<FileListItem> rem_list=new ArrayList<FileListItem>();
-        sendDebugLogMsg(2,"I","Filelist directory: "+url);
+        mLog.addDebugMsg(2,"I","Filelist directory: "+url);
         try {
-            JcifsFile remoteFile = new JcifsFile(url, mJcifsAuth);
+            String suffix=url.endsWith("/")?"":"/";
+            JcifsFile remoteFile = new JcifsFile(url+suffix, mJcifsAuth);
             JcifsFile[] fl = remoteFile.listFiles();
 
             for (int i=0;i<fl.length;i++){
                 if (getFLCtrl.isEnabled()) {
                     String fn=fl[i].getName();
+                    mLog.addDebugMsg(2,"I","fn="+fn);
                     if (fn.endsWith("/")) fn=fn.substring(0,fn.length()-1);
                     if (!fn.endsWith("$") &&
                             fl[i].canRead() &&
@@ -294,7 +303,7 @@ public class RetrieveFileList extends Thread  {
                                 dirct=tfl.length;
                             }
                         } catch (JcifsException e) {
-                            sendDebugLogMsg(0,"I","File ignored by exception: "+e.toString()+", "+
+                            mLog.addLogMsg("I","File ignored by exception: "+e.toString()+", "+
                                     "Name="+fn+", "+
                                     "isDirectory="+fl[i].isDirectory()+", "+
                                     "Length="+fl[i].length()+", "+
@@ -320,7 +329,7 @@ public class RetrieveFileList extends Thread  {
                         fi.setSubDirItemCount(dirct);
                         fi.setHasExtendedAttr(has_ea);
                         rem_list.add(fi);
-                        sendDebugLogMsg(2,"I","Filelist added: "+
+                        mLog.addDebugMsg(1,"I","Filelist added: "+
                                 "Name="+fn+", "+
                                 "isDirectory="+fl[i].isDirectory()+", "+
                                 "Length="+fl[i].length()+", "+
@@ -335,19 +344,19 @@ public class RetrieveFileList extends Thread  {
                     }
                 } else {
                     getFLCtrl.setThreadResultCancelled();
-                    sendDebugLogMsg(1,"W","Cancelled by main task.");
+                    mLog.addDebugMsg(1,"W","Cancelled by main task.");
                     break;
                 }
             }
         } catch (JcifsException e) {
             e.printStackTrace();
-            sendDebugLogMsg(0,"E",e.toString());
+            mLog.addDebugMsg(1,"E",e.toString());
             getFLCtrl.setThreadResultError();
             getFLCtrl.setDisabled();
             getFLCtrl.setThreadMessage(e.toString());
         } catch (MalformedURLException e) {
             e.printStackTrace();
-            sendDebugLogMsg(0,"E",e.toString());
+            mLog.addDebugMsg(1,"E",e.toString());
             getFLCtrl.setThreadResultError();
             getFLCtrl.setDisabled();
             getFLCtrl.setThreadMessage(e.toString());
@@ -359,29 +368,21 @@ public class RetrieveFileList extends Thread  {
 		for (int i=0;i<dir_list.size();i++) {
 			try {		
 				JcifsFile remoteFile = new JcifsFile(dir_list.get(i), mJcifsAuth);
-                sendDebugLogMsg(1,"I","checkItemExists fp="+remoteFile.getPath());
+                mLog.addDebugMsg(1,"I","checkItemExists fp="+remoteFile.getPath());
 				if (!remoteFile.exists()) dir_list.set(i,"");
 			} catch (JcifsException e) {
 				e.printStackTrace();
-				sendDebugLogMsg(0,"E",e.toString());
+                mLog.addDebugMsg(1,"E",e.toString());
 				getFLCtrl.setThreadResultError();
 				getFLCtrl.setDisabled();
 				getFLCtrl.setThreadMessage(e.toString());
 			} catch (MalformedURLException e) {
 				e.printStackTrace();
-				sendDebugLogMsg(0,"E",e.toString());
+                mLog.addDebugMsg(1,"E",e.toString());
 				getFLCtrl.setThreadResultError();
 				getFLCtrl.setDisabled();
 				getFLCtrl.setThreadMessage(e.toString());
 			}
 		}
 	};
-	
-	
-	private void sendDebugLogMsg(int lvl, final String cat, final String msg) {
-		if (mGp.settingDebugLevel>=lvl) {
-			Log.v(DEBUG_TAG,"FILELIST"+" "+msg);
-		}
-	};
-	
 }
