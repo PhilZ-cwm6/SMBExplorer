@@ -2,7 +2,7 @@ package com.sentaroh.android.SMBExplorer;
 
 /*
 The MIT License (MIT)
-Copyright (c) 2011-2013 Sentaroh
+Copyright (c) 2011-2019 Sentaroh
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of 
 this software and associated documentation files (the "Software"), to deal 
@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 import android.content.ContentProviderClient;
 import android.content.Context;
 import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.WifiLock;
 import android.os.Build;
@@ -36,9 +37,9 @@ import android.os.RemoteException;
 import android.webkit.MimeTypeMap;
 
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
-import com.sentaroh.android.Utilities2.NotifyEvent;
-import com.sentaroh.android.Utilities2.SafFile3;
-import com.sentaroh.android.Utilities2.ThreadCtrl;
+import com.sentaroh.android.Utilities3.NotifyEvent;
+import com.sentaroh.android.Utilities3.SafFile3;
+import com.sentaroh.android.Utilities3.ThreadCtrl;
 import com.sentaroh.jcifs.JcifsAuth;
 import com.sentaroh.jcifs.JcifsException;
 import com.sentaroh.jcifs.JcifsFile;
@@ -46,6 +47,8 @@ import com.sentaroh.jcifs.JcifsFile;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -338,14 +341,18 @@ public class FileIo extends Thread {
     	if (!fileioThreadCtrl.isEnabled()) return false;
     	sendDebugLogMsg(1,"I","Rename local item=",oldUrl);
     	SafFile3 document=null;
-    	if (from_rt.isSafFile()) {
-            document=new SafFile3(mContext, oldUrl);
-            String[] new_name_array=newUrl.split("/");
-            result=document.renameTo(new_name_array[new_name_array.length-1]);
-        } else {
-            document=new SafFile3(mContext, oldUrl);
-            SafFile3 new_file=new SafFile3(mContext, newUrl);
-            result=document.renameTo(new_file);
+    	try {
+            if (from_rt.isSafFile()) {
+                document=new SafFile3(mContext, oldUrl);
+                String[] new_name_array=newUrl.split("/");
+                result=document.renameTo(new_name_array[new_name_array.length-1]);
+            } else {
+                document=new SafFile3(mContext, oldUrl);
+                SafFile3 new_file=new SafFile3(mContext, newUrl);
+                result=document.renameTo(new_file);
+            }
+        } catch(Exception e) {
+    	    e.printStackTrace();
         }
         if (result) {
             sendLogMsg("I",oldUrl," was renamed to ",newUrl);
@@ -367,6 +374,8 @@ public class FileIo extends Thread {
             try {
                 client = mContext.getContentResolver().acquireContentProviderClient(usf.getUri().getAuthority());
                 result = deleteSafFile(usf, client);
+            } catch (Exception e) {
+                e.printStackTrace();
             } finally {
                 if (client!=null) client.release();
             }
@@ -405,8 +414,8 @@ public class FileIo extends Thread {
 
     private boolean deleteSafFile(SafFile3 lf, ContentProviderClient client) {
     	boolean result=false;
-        if (lf.isDirectory()) {//ディレクトリの場合  
-            SafFile3[] children = lf.listFiles();//ディレクトリにあるすべてのファイルを処理する
+        if (lf.isDirectory(client)) {//ディレクトリの場合
+            SafFile3[] children = lf.listFiles(client);//ディレクトリにあるすべてのファイルを処理する
             for (int i=0; i<children.length; i++) {  
             	if (!fileioThreadCtrl.isEnabled()) return false;
             	result=deleteSafFile(children[i], client);
@@ -420,7 +429,7 @@ public class FileIo extends Thread {
             SafFile3.deleteDocument(client, lf.getUri());
             scanMediaStoreLibraryFile(lf.getPath());
             result=true;
-        } catch (RemoteException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         if (result) {
@@ -634,25 +643,26 @@ public class FileIo extends Thread {
     private boolean copyMoveFileLocalToLocat(boolean move, SafFile3 from_saf, SafFile3 to_saf, String fromUrl, String toUrl) {
 	    boolean result=false;
 	    String title=move?"Moving":"Copying";
+	    SafFile3 temp_out=null;
         try {
             if (to_saf.getAppDirectoryCache()!=null && Build.VERSION.SDK_INT>=24) {
-                SafFile3 temp_out=new SafFile3(mContext, to_saf.getAppDirectoryCache()+"/"+to_saf.getName());
-                File tf=new File(temp_out.getPath());
+                File tf=new File(to_saf.getAppDirectoryCache()+"/"+to_saf.getName());
                 File df=new File(tf.getParent());
                 if (!df.exists()) df.mkdirs();
-                temp_out.createNewFile();
-                copyFile(from_saf.getInputStream(), temp_out.getOutputStream(), from_saf.length(), title, from_saf.getName(), fromUrl, toUrl);
+                copyFile(from_saf.getInputStream(), new FileOutputStream(tf), from_saf.length(), title, from_saf.getName(), fromUrl, toUrl);
+//                copyFile(from_saf.getInputStream(), new FileOutputStream(temp_os), from_saf.length(), title, from_saf.getName(), fromUrl, toUrl);
                 if (!fileioThreadCtrl.isEnabled()) {
-                    temp_out.deleteIfExists();
+                    tf.delete();
                     result=false;
                 } else {
                     tf.setLastModified(from_saf.lastModified());
+                    temp_out=new SafFile3(mContext, to_saf.getAppDirectoryCache()+"/"+to_saf.getName());
                     to_saf.deleteIfExists();
                     result=temp_out.moveTo(to_saf);
                     if (move && result) result=from_saf.delete();
                 }
             } else {
-                SafFile3 temp_out=new SafFile3(mContext, toUrl+".tmp");
+                temp_out=new SafFile3(mContext, toUrl+".tmp");
                 temp_out.createNewFile();
                 copyFile(from_saf.getInputStream(), temp_out.getOutputStream(), from_saf.length(), title, from_saf.getName(), fromUrl, toUrl);
                 if (!fileioThreadCtrl.isEnabled()) {
@@ -660,7 +670,7 @@ public class FileIo extends Thread {
                     result=false;
                 } else {
                     to_saf.deleteIfExists();
-                    result=temp_out.renameTo(to_saf);
+                    result=temp_out.renameTo(to_saf.getName());
                     if (move && result) result=from_saf.delete();
                 }
             }
@@ -668,6 +678,7 @@ public class FileIo extends Thread {
             e.printStackTrace();
             sendLogMsg("E","copyMoveFileLocalToLocal error:",e.toString());
             fileioThreadCtrl.setThreadMessage("copyMoveFileLocalToLocal error:"+e.toString());
+            if (temp_out!=null) try {if (temp_out.exists()) temp_out.delete();} catch(Exception ex) {}
             result=false;
         }
         return result;
@@ -676,9 +687,10 @@ public class FileIo extends Thread {
     private boolean copyMoveFileRemoteToLocat(boolean move, JcifsFile from_jcifs, SafFile3 to_saf, String fromUrl, String toUrl) {
         boolean result=false;
         String title=move?"Moving":"Copying";
+        SafFile3 temp_out=null;
         try {
             if (to_saf.getAppDirectoryCache()!=null && Build.VERSION.SDK_INT>=24) {
-                SafFile3 temp_out=new SafFile3(mContext, to_saf.getAppDirectoryCache()+"/"+to_saf.getName());
+                temp_out=new SafFile3(mContext, to_saf.getAppDirectoryCache()+"/"+to_saf.getName());
                 File tf=new File(temp_out.getPath());
                 File df=new File(tf.getParent());
                 if (!df.exists()) df.mkdirs();
@@ -694,7 +706,7 @@ public class FileIo extends Thread {
                     if (move && result) from_jcifs.delete();
                 }
             } else {
-                SafFile3 temp_out=new SafFile3(mContext, toUrl+".tmp");
+                temp_out=new SafFile3(mContext, toUrl+".tmp");
                 temp_out.createNewFile();
                 copyFile(from_jcifs.getInputStream(), temp_out.getOutputStream(), from_jcifs.length(), title, from_jcifs.getName(), fromUrl, toUrl);
                 if (!fileioThreadCtrl.isEnabled()) {
@@ -710,6 +722,7 @@ public class FileIo extends Thread {
             e.printStackTrace();
             sendLogMsg("E","copyMoveFileRemoteToLocal error:",e.toString());
             fileioThreadCtrl.setThreadMessage("copyMoveFileRemoteToLocal error:"+e.toString());
+            if (temp_out!=null) try {if (temp_out.exists()) temp_out.delete();} catch(Exception ex) {}
             result=false;
         }
         return result;
@@ -718,8 +731,9 @@ public class FileIo extends Thread {
     private boolean copyMoveFileLocalToRemote(boolean move, SafFile3 from_saf, JcifsFile to_jcifs, String fromUrl, String toUrl) {
         boolean result=false;
         String title=move?"Moving":"Copying";
+        JcifsFile temp_out=null;
         try {
-            JcifsFile temp_out=new JcifsFile(toUrl+"."+System.currentTimeMillis()+".tmp", to_jcifs.getAuth());
+            temp_out=new JcifsFile(toUrl+"."+System.currentTimeMillis()+".tmp", to_jcifs.getAuth());
             copyFile(from_saf.getInputStream(), temp_out.getOutputStream(), from_saf.length(), title, from_saf.getName(), fromUrl, toUrl);
             if (!fileioThreadCtrl.isEnabled()) {
                 temp_out.delete();
@@ -735,6 +749,7 @@ public class FileIo extends Thread {
             e.printStackTrace();
             sendLogMsg("E","copyMoveFileLocalToRemote error:",e.toString());
             fileioThreadCtrl.setThreadMessage("copyMoveFileLocalToRemote error:"+e.toString());
+            if (temp_out!=null) try {if (temp_out.exists()) temp_out.delete();} catch(Exception ex) {}
             result=false;
         }
         return result;
@@ -743,14 +758,16 @@ public class FileIo extends Thread {
     private boolean copyMoveFileRemoteToRemote(boolean move, JcifsFile from_jcifs, JcifsFile to_jcifs, String fromUrl, String toUrl) {
         boolean result=false;
         String title=move?"Moving":"Copying";
+        JcifsFile temp_out=null;
         try {
-            JcifsFile temp_out=new JcifsFile(toUrl+"."+System.currentTimeMillis()+".tmp", to_jcifs.getAuth());
+            temp_out=new JcifsFile(toUrl+"."+System.currentTimeMillis()+".tmp", to_jcifs.getAuth());
             copyFile(from_jcifs.getInputStream(), temp_out.getOutputStream(), from_jcifs.length(), title, from_jcifs.getName(), fromUrl, toUrl);
             if (!fileioThreadCtrl.isEnabled()) {
                 temp_out.delete();
                 result=false;
             } else {
                 temp_out.setLastModified(from_jcifs.getLastModified());
+                if (to_jcifs.exists()) to_jcifs.delete();
                 temp_out.renameTo(to_jcifs);
                 result=true;
                 if (move && result) from_jcifs.delete();
@@ -759,6 +776,7 @@ public class FileIo extends Thread {
             e.printStackTrace();
             sendLogMsg("E","copyMoveFileRemoteToRemote error:",e.toString());
             fileioThreadCtrl.setThreadMessage("copyMoveFileRemoteToRemote error:"+e.toString());
+            if (temp_out!=null) try {if (temp_out.exists()) temp_out.delete();} catch(Exception ex) {}
             result=false;
         }
         return result;

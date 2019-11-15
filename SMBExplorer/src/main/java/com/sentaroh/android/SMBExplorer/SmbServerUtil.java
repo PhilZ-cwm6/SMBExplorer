@@ -1,4 +1,26 @@
 package com.sentaroh.android.SMBExplorer;
+/*
+The MIT License (MIT)
+Copyright (c) 2011-2019 Sentaroh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+*/
 
 import android.app.Dialog;
 import android.content.Context;
@@ -7,14 +29,14 @@ import android.net.Uri;
 import android.os.Handler;
 import android.util.Xml;
 
-import com.sentaroh.android.Utilities2.Base64Compat;
-import com.sentaroh.android.Utilities2.Dialog.CommonDialog;
-import com.sentaroh.android.Utilities2.Dialog.CommonFileSelector2;
-import com.sentaroh.android.Utilities2.EncryptUtil;
-import com.sentaroh.android.Utilities2.NotifyEvent;
-import com.sentaroh.android.Utilities2.SafFile3;
-import com.sentaroh.android.Utilities2.ThreadCtrl;
-import com.sentaroh.android.Utilities2.Widget.CustomSpinnerAdapter;
+import com.sentaroh.android.Utilities3.Base64Compat;
+import com.sentaroh.android.Utilities3.Dialog.CommonDialog;
+import com.sentaroh.android.Utilities3.Dialog.CommonFileSelector2;
+import com.sentaroh.android.Utilities3.EncryptUtil;
+import com.sentaroh.android.Utilities3.NotifyEvent;
+import com.sentaroh.android.Utilities3.SafFile3;
+import com.sentaroh.android.Utilities3.ThreadCtrl;
+import com.sentaroh.android.Utilities3.Widget.CustomSpinnerAdapter;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -23,8 +45,6 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -100,7 +120,7 @@ public class SmbServerUtil {
                     init_smb_list=true;
                 }
             } else {
-                priv_key=KeyStoreUtil2.getGeneratedPassword(gp.context, SMBEXPLORER_KEY_STORE_ALIAS);
+                priv_key= KeyStoreUtility.getGeneratedPassword(gp.context, SMBEXPLORER_KEY_STORE_ALIAS);
                 cp_int= EncryptUtil.initDecryptEnv(priv_key);
                 fis = gp.context.openFileInput(SMBEXPLORER_PROFILE_NAME);
             }
@@ -220,7 +240,7 @@ public class SmbServerUtil {
                 if (!lf.exists()) lf.createNewFile();
                 profile_out=lf.getOutputStream();
             } else {
-                priv_key=KeyStoreUtil2.getGeneratedPassword(gp.context, SMBEXPLORER_KEY_STORE_ALIAS);
+                priv_key= KeyStoreUtility.getGeneratedPassword(gp.context, SMBEXPLORER_KEY_STORE_ALIAS);
                 cp_int= EncryptUtil.initDecryptEnv(priv_key);
 
                 profile_out=gp.context.openFileOutput(SMBEXPLORER_PROFILE_NAME, MODE_PRIVATE);

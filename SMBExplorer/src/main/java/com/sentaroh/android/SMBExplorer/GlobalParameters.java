@@ -2,7 +2,7 @@ package com.sentaroh.android.SMBExplorer;
 
 /*
 The MIT License (MIT)
-Copyright (c) 2011-2013 Sentaroh
+Copyright (c) 2011-2019 Sentaroh
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of 
 this software and associated documentation files (the "Software"), to deal 
@@ -39,12 +39,12 @@ import android.widget.TabWidget;
 import android.widget.TextView;
 
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
-import com.sentaroh.android.Utilities2.Dialog.CommonDialog;
-import com.sentaroh.android.Utilities2.LogUtil.CommonLogParameters;
-import com.sentaroh.android.Utilities2.LogUtil.CommonLogParametersFactory;
-import com.sentaroh.android.Utilities2.SafManager3;
-import com.sentaroh.android.Utilities2.ThemeColorList;
-import com.sentaroh.android.Utilities2.Widget.NonWordwrapTextView;
+import com.sentaroh.android.Utilities3.Dialog.CommonDialog;
+import com.sentaroh.android.Utilities3.LogUtil.CommonLogParameters;
+import com.sentaroh.android.Utilities3.LogUtil.CommonLogParametersFactory;
+import com.sentaroh.android.Utilities3.SafManager3;
+import com.sentaroh.android.Utilities3.ThemeColorList;
+import com.sentaroh.android.Utilities3.Widget.NonWordwrapTextView;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

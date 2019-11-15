@@ -2,7 +2,7 @@ package com.sentaroh.android.SMBExplorer;
 
 /*
 The MIT License (MIT)
-Copyright (c) 2011-2018 Sentaroh
+Copyright (c) 2011-2019 Sentaroh
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of 
 this software and associated documentation files (the "Software"), to deal 
@@ -31,7 +31,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 
-import com.sentaroh.android.Utilities2.NotifyEvent;
+import com.sentaroh.android.Utilities3.NotifyEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;

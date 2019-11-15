@@ -1,4 +1,26 @@
 package com.sentaroh.android.SMBExplorer;
+/*
+The MIT License (MIT)
+Copyright (c) 2011-2019 Sentaroh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+*/
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -28,15 +50,15 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.security.auth.x500.X500Principal;
 
-public class KeyStoreUtil2 {
-    final static String PROVIDER = "AndroidKeyStore";
-    final static String ALGORITHM_AES = "AES";
-    final static String ALGORITHM_RSA = "RSA";
-    final static String CIPHER_TRANSFORMATION_AES = "AES/CBC/PKCS7Padding";
-    final static String CIPHER_TRANSFORMATION_RSA = "RSA/ECB/PKCS1Padding";
+public class KeyStoreUtility {
+    private final static String PROVIDER = "AndroidKeyStore";
+    private final static String ALGORITHM_AES = "AES";
+    private final static String ALGORITHM_RSA = "RSA";
+    private final static String CIPHER_TRANSFORMATION_AES = "AES/CBC/PKCS7Padding";
+    private final static String CIPHER_TRANSFORMATION_RSA = "RSA/ECB/PKCS1Padding";
 //    final static boolean LOG_MESSAGE_ENABLED=false;
 
-    private static Logger slf4jLog = LoggerFactory.getLogger(KeyStoreUtil2.class);
+    private final static Logger slf4jLog = LoggerFactory.getLogger(KeyStoreUtility.class);
 
     final static public String makeSHA256Hash(byte[] input) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");

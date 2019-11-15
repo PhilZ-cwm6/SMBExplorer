@@ -1,4 +1,26 @@
 package com.sentaroh.android.SMBExplorer;
+/*
+The MIT License (MIT)
+Copyright (c) 2011-2019 Sentaroh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+*/
 
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
@@ -31,15 +53,15 @@ import android.widget.TextView;
 
 import androidx.core.content.FileProvider;
 
-import com.sentaroh.android.Utilities2.ContextMenu.CustomContextMenu;
-import com.sentaroh.android.Utilities2.ContextMenu.CustomContextMenuItem;
-import com.sentaroh.android.Utilities2.Dialog.CommonDialog;
-import com.sentaroh.android.Utilities2.NotifyEvent;
-import com.sentaroh.android.Utilities2.SafFile3;
-import com.sentaroh.android.Utilities2.SafStorage3;
-import com.sentaroh.android.Utilities2.ThreadCtrl;
-import com.sentaroh.android.Utilities2.Widget.CustomSpinnerAdapter;
-import com.sentaroh.android.Utilities2.Widget.NonWordwrapTextView;
+import com.sentaroh.android.Utilities3.ContextMenu.CustomContextMenu;
+import com.sentaroh.android.Utilities3.ContextMenu.CustomContextMenuItem;
+import com.sentaroh.android.Utilities3.Dialog.CommonDialog;
+import com.sentaroh.android.Utilities3.NotifyEvent;
+import com.sentaroh.android.Utilities3.SafFile3;
+import com.sentaroh.android.Utilities3.SafStorage3;
+import com.sentaroh.android.Utilities3.ThreadCtrl;
+import com.sentaroh.android.Utilities3.Widget.CustomSpinnerAdapter;
+import com.sentaroh.android.Utilities3.Widget.NonWordwrapTextView;
 import com.sentaroh.jcifs.JcifsException;
 import com.sentaroh.jcifs.JcifsFile;
 
@@ -242,7 +264,7 @@ public class FileManager {
 //        Thread.dumpStack();
         for(MountPointHistoryItem item:mGp.mountPointHistoryList) {
             if (item.mp_name.equals(mp)) {
-                mUtil.addDebugMsg(1,"I","getMountPointHistoryItem mp="+mp+", result="+item);
+                mUtil.addDebugMsg(1,"I","getMountPointHistoryItem mp="+mp+", result=found");
                 return item;
             }
         }
@@ -420,23 +442,36 @@ public class FileManager {
         else createRemoteFileList(RetrieveFileList.OPCD_FILE_LIST, url+"/"+dir+"/",ne);
     }
 
+    private LocalStorage getLocalStorageItem(ArrayList<LocalStorage>lsl, String stg_name) {
+        LocalStorage ls_item=null;
+        for(LocalStorage item:lsl) {
+            if (item.storage_name.equals(stg_name)) {
+                ls_item=item;
+                break;
+            }
+        }
+        return ls_item;
+    }
+
     public boolean updateLocalDirSpinner() {
+//        Thread.dumpStack();
         int sel_no=mGp.localFileListDirSpinner.getSelectedItemPosition();
 
         CustomSpinnerAdapter adapter = (CustomSpinnerAdapter) mGp.localFileListDirSpinner.getAdapter();
-        mGp.localStorageList =createLocalProfileEntry();
+        ArrayList<LocalStorage>lsl=createLocalProfileEntry();
         boolean changed=false;
-        if (mGp.localStorageList.size()==adapter.getCount()) {
-            for(int i=0;i>adapter.getCount();i++) {
-                String a_item=adapter.getItem(i);
-                if (!a_item.equals(mGp.localStorageList.get(i))) {
-                    changed=true;
-                    break;
-                }
+
+        for(LocalStorage item:lsl) {
+            LocalStorage prev_item=getLocalStorageItem(mGp.localStorageList, item.storage_name);
+            if (prev_item!=null) {
+                item.setLastUseDirectory(prev_item.getLastUseDirectory());
+                item.storage_pos_fv=prev_item.storage_pos_fv;
+                item.storage_pos_top=prev_item.storage_pos_top;
             }
-        } else {
-            changed=true;
         }
+        mGp.localStorageList.clear();
+        mGp.localStorageList.addAll(lsl);
+
         adapter.clear();
         for (int i = 0; i<mGp.localStorageList.size(); i++) {
             adapter.add(mGp.localStorageList.get(i).storage_name);
@@ -476,26 +511,45 @@ public class FileManager {
                 Spinner spinner = (Spinner) parent;
                 String stg_name=(String) spinner.getSelectedItem();
                 if (mGp.currentLocalStorage !=null) {
-                    mGp.currentLocalStorage.storage_last_use_directory=mGp.localDirectory;
+                    mGp.currentLocalStorage.setLastUseDirectory(mGp.localDirectory);
                     int pos_fv=mGp.localFileListView.getFirstVisiblePosition();
                     int pos_top=0;
                     if (mGp.localFileListView.getChildAt(0)!=null) pos_top=mGp.localFileListView.getChildAt(0).getTop();
                     mGp.currentLocalStorage.storage_pos_fv=pos_fv;
                     mGp.currentLocalStorage.storage_pos_top=pos_top;
                     log.info("set fv="+mGp.currentLocalStorage.storage_pos_fv+", top="+mGp.currentLocalStorage.storage_pos_top);
+                    boolean found=false;
+                    for(LocalStorage item:mGp.localStorageList) {
+                        if (item.storage_name.equals(mGp.currentLocalStorage.storage_name)) {
+                            item.storage_pos_fv=mGp.currentLocalStorage.storage_pos_fv;
+                            item.storage_pos_top=mGp.currentLocalStorage.storage_pos_top;
+                            item.setLastUseDirectory(mGp.localDirectory);
+                            found=true;
+                        }
+                    }
+                    if (!found) {
+                        LocalStorage item=new LocalStorage();
+                        item.storage_name=mGp.currentLocalStorage.storage_name;
+                        item.storage_pos_fv=mGp.currentLocalStorage.storage_pos_fv;
+                        item.storage_pos_top=mGp.currentLocalStorage.storage_pos_top;
+                        item.setLastUseDirectory(mGp.localDirectory);
+                        mGp.localStorageList.add(item);
+                    }
                 }
+                boolean found=false;
                 for(LocalStorage item:mGp.localStorageList) {
                     if (item.storage_name.equals(stg_name)) {
                         mGp.currentLocalStorage =item;
                         mGp.currentLocalStorage.storage_pos_fv=item.storage_pos_fv;
                         mGp.currentLocalStorage.storage_pos_top=item.storage_pos_top;
-                        mGp.localDirectory =item.storage_last_use_directory;
+                        mGp.localDirectory =item.getLastUseDirectory().equals("")?item.storage_root.getPath():item.getLastUseDirectory();
                         log.info("new fv="+mGp.currentLocalStorage.storage_pos_fv+", top="+mGp.currentLocalStorage.storage_pos_top);
+                        found=true;
 //                        if (!item.storage_saf_file) mGp.localBase=mGp.internalRootDirectory;
 //                        else mGp.localBase=item.storage_root.getName();
                     }
                 }
-                mGp.localDirectory =mGp.currentLocalStorage.storage_root.getPath();
+//                mGp.localDirectory =mGp.currentLocalStorage.storage_root.getPath();
                 NotifyEvent ntfy=new NotifyEvent(mContext);
                 ntfy.setListener(new NotifyEvent.NotifyEventListener() {
                     @Override
@@ -718,7 +772,8 @@ public class FileManager {
             @Override
             public void negativeResponse(Context context, Object[] objects) {}
         });
-        createSafApiFileList(mGp.currentLocalStorage.storage_root, false, n_dhi.directory_name, ntfy);
+        if (mGp.currentLocalStorage.storage_saf_file) createSafApiFileList(mGp.currentLocalStorage.storage_root, false, n_dhi.directory_name, ntfy);
+        else createFileApiFileList(false, n_dhi.directory_name, ntfy);
     }
 
     public void setEmptyFolderView() {
@@ -2518,7 +2573,7 @@ public class FileManager {
         return result;
     }
 
-    final public long getAllFileSizeInDirectory(SafFile3 sd, boolean process_sub_directories, ContentProviderClient cpc) {
+    final public long getSafApiAllFileSizeInDirectory(SafFile3 sd, boolean process_sub_directories, ContentProviderClient cpc) {
         long dir_size=0l;
         if (sd.exists(cpc)) {
             if (sd.isDirectory(cpc)) {
@@ -2528,7 +2583,7 @@ public class FileManager {
                 for(SafFile3 cf:cfl) {
                     if (cf.isDirectory(cpc)) {
                         if (process_sub_directories)
-                            dir_size+=getAllFileSizeInDirectory(cf, process_sub_directories, cpc);
+                            dir_size+=getSafApiAllFileSizeInDirectory(cf, process_sub_directories, cpc);
                     } else {
                         dir_size+=cf.length(cpc);
                     }
@@ -2540,7 +2595,7 @@ public class FileManager {
         return dir_size;
     }
 
-    final public long getAllFileSizeInDirectory(SafFile3 sd, boolean process_sub_directories) {
+    final public long getSafApiAllFileSizeInDirectory(SafFile3 sd, boolean process_sub_directories) {
         long dir_size=0l;
         if (sd.exists()) {
             if (sd.isDirectory()) {
@@ -2550,7 +2605,7 @@ public class FileManager {
                 for(SafFile3 cf:cfl) {
                     if (cf.isDirectory()) {
                         if (process_sub_directories)
-                            dir_size+=getAllFileSizeInDirectory(cf, process_sub_directories);
+                            dir_size+= getSafApiAllFileSizeInDirectory(cf, process_sub_directories);
                     } else {
                         dir_size+=cf.length();
                     }
@@ -2562,7 +2617,7 @@ public class FileManager {
         return dir_size;
     }
 
-    final public long getAllFileSizeInDirectory(File sd, boolean process_sub_directories) {
+    final public long getFileApiAllFileSizeInDirectory(File sd, boolean process_sub_directories) {
         long dir_size=0l;
         if (sd.exists()) {
             if (sd.isDirectory()) {
@@ -2572,7 +2627,7 @@ public class FileManager {
                 for(File cf:cfl) {
                     if (cf.isDirectory()) {
                         if (process_sub_directories)
-                            dir_size+=getAllFileSizeInDirectory(cf, process_sub_directories);
+                            dir_size+= getFileApiAllFileSizeInDirectory(cf, process_sub_directories);
                     } else {
                         dir_size+=cf.length();
                     }
@@ -2595,11 +2650,11 @@ public class FileManager {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
                 ArrayList<FileListItem> dir = new ArrayList<FileListItem>();
                 ArrayList<FileListItem> fls = new ArrayList<FileListItem>();
-                SafFile3 sf = new SafFile3(mContext, url);
-                SafFile3[] file_list = sf.listFiles();
+                File sf = new File(url);
+                File[] file_list = sf.listFiles();
                 if (file_list!=null) {
                     try {
-                        for (SafFile3 ff : file_list) {
+                        for (File ff : file_list) {
                             FileListItem tfi=null;
                             if (ff.canRead()) {
                                 if (ff.isDirectory()) {
@@ -2607,10 +2662,10 @@ public class FileManager {
                                     int sdc=0;
                                     if (tfl!=null) sdc=tfl.length;
                                     int ll=0;
-                                    tfi=createNewFilelistItem("", ff, sdc, ll, true, url);
+                                    tfi=createFileApiFilelistItem("", ff, sdc, ll, true, url);
                                     dir.add(tfi);
                                 } else {
-                                    tfi=createNewFilelistItem("", ff, 0, 0, false, url);
+                                    tfi=createFileApiFilelistItem("", ff, 0, 0, false, url);
                                     fls.add(tfi);
                                 }
                                 if (mUtil.getLogLevel()>=3) {
@@ -2622,7 +2677,7 @@ public class FileManager {
                                             "path: " + tfi.getPath()+", ");
                                 }
                             } else {
-                                tfi=createNewFilelistItem("", ff, 0, 0, false, url);
+                                tfi=createFileApiFilelistItem("", ff, 0, 0, false, url);
                                 if (tfi.isDir()) dir.add(tfi);
                                 else fls.add(tfi);
                             }
@@ -2696,10 +2751,10 @@ public class FileManager {
                                     int sdc=0;
                                     int ll=0;
                                     sdc=ff.getCount(cpc);
-                                    tfi=createSafNewFilelistItem("", ff, sdc, ll, true, url, cpc);
+                                    tfi= createSafApiFilelistItem("", ff, sdc, ll, true, url, cpc);
                                     dir.add(tfi);
                                 } else {
-                                    tfi=createSafNewFilelistItem("", ff, 0, 0, false, url, cpc);
+                                    tfi= createSafApiFilelistItem("", ff, 0, 0, false, url, cpc);
                                     fls.add(tfi);
                                 }
 //                                mUtil.addDebugMsg(1,"I","fp="+ff.getPath()+", elapse="+(System.currentTimeMillis()-b_time_s));
@@ -2952,10 +3007,10 @@ public class FileManager {
                 public void run() {
                     SafFile3 lf=new SafFile3(mContext, tfli.getPath());
                     if (lf.canRead()) {
-                        long dir_size=getAllFileSizeInDirectory(lf, true);
+                        long dir_size= getSafApiAllFileSizeInDirectory(lf, true);
                         fi.setLength(dir_size);
                     } else {
-                        long dir_size=getAllFileSizeInDirectory(tfli, true);
+                        long dir_size= getSafApiAllFileSizeInDirectory(tfli, true);
                         fi.setLength(dir_size);
                     }
                     mUiHandler.post(new Runnable(){
@@ -2986,7 +3041,60 @@ public class FileManager {
 
     }
 
-    public FileListItem createSafNewFilelistItem(String base_url, SafFile3 tfli, int sdc, int ll, boolean dir, String parent, ContentProviderClient cpc) {
+    public FileListItem createFileApiFilelistItem(String base_url, File tfli, int sdc, int ll, boolean dir, String parent) {
+//        Thread.dumpStack();
+        if (dir) {
+            String fn=tfli.getName();
+            boolean is_hidden=fn.startsWith(".")?true:false;
+            final FileListItem fi= new FileListItem(fn,
+                    true,
+                    -1,
+                    tfli.lastModified(),
+                    false,
+                    true, false,//tfli.canRead(),tfli.canWrite(),
+                    is_hidden, parent, //tfli.isHidden(),tfli.getParent(),
+                    ll);
+            fi.setSubDirItemCount(sdc);
+            fi.setBaseUrl(base_url);;
+            Thread th=new Thread(){
+                @Override
+                public void run() {
+                    File lf=new File(tfli.getPath());
+                    if (lf.canRead()) {
+                        long dir_size= getFileApiAllFileSizeInDirectory(lf, true);
+                        fi.setLength(dir_size);
+                    } else {
+                        long dir_size= getFileApiAllFileSizeInDirectory(tfli, true);
+                        fi.setLength(dir_size);
+                    }
+                    mUiHandler.post(new Runnable(){
+                        @Override
+                        public void run(){
+                            mGp.localFileListAdapter.notifyDataSetChanged();
+                        }
+                    }) ;
+                }
+            };
+            th.start();
+            return fi;
+        } else {
+            String fn=tfli.getName();
+            boolean is_hidden=fn.startsWith(".")?true:false;
+            FileListItem fi=new FileListItem(fn,
+                    false,
+                    tfli.length(),
+                    tfli.lastModified(),
+                    false,
+                    true,false,//tfli.canRead(),tfli.canWrite(),
+                    is_hidden, parent,//tfli.isHidden(),tfli.getParent(),
+                    ll);
+            fi.setBaseUrl(base_url);;
+            return fi;
+        }
+
+    }
+
+    public FileListItem createSafApiFilelistItem(String base_url, SafFile3 tfli, int sdc, int ll, boolean dir, String parent, ContentProviderClient cpc) {
 //        Thread.dumpStack();
         String fn=tfli.getName();
         boolean is_hidden=fn.startsWith(".")?true:false;
@@ -3006,10 +3114,10 @@ public class FileManager {
                 public void run() {
                     SafFile3 lf=new SafFile3(mContext, tfli.getPath());
                     if (lf.canRead()) {
-                        long dir_size=getAllFileSizeInDirectory(lf, true, cpc);
+                        long dir_size=getSafApiAllFileSizeInDirectory(lf, true, cpc);
                         fi.setLength(dir_size);
                     } else {
-                        long dir_size=getAllFileSizeInDirectory(tfli, true, cpc);
+                        long dir_size=getSafApiAllFileSizeInDirectory(tfli, true, cpc);
                         fi.setLength(dir_size);
                     }
                     mUiHandler.post(new Runnable(){

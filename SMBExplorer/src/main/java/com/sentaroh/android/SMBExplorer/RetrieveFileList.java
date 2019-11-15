@@ -2,7 +2,7 @@ package com.sentaroh.android.SMBExplorer;
 
 /*
 The MIT License (MIT)
-Copyright (c) 2011-2013 Sentaroh
+Copyright (c) 2011-2019 Sentaroh
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of 
 this software and associated documentation files (the "Software"), to deal 
@@ -31,8 +31,8 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
-import com.sentaroh.android.Utilities2.NotifyEvent;
-import com.sentaroh.android.Utilities2.ThreadCtrl;
+import com.sentaroh.android.Utilities3.NotifyEvent;
+import com.sentaroh.android.Utilities3.ThreadCtrl;
 import com.sentaroh.jcifs.JcifsAuth;
 import com.sentaroh.jcifs.JcifsException;
 import com.sentaroh.jcifs.JcifsFile;

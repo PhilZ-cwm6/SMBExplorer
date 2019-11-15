@@ -2,7 +2,7 @@ package com.sentaroh.android.SMBExplorer;
 
 /*
 The MIT License (MIT)
-Copyright (c) 2011-2013 Sentaroh
+Copyright (c) 2011-2019 Sentaroh
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of 
 this software and associated documentation files (the "Software"), to deal 
@@ -31,6 +31,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -58,16 +59,16 @@ import androidx.core.content.FileProvider;
 import androidx.viewpager.widget.ViewPager;
 
 import com.sentaroh.android.SMBExplorer.Log.LogManagementFragment;
-import com.sentaroh.android.Utilities2.AppUncaughtExceptionHandler;
-import com.sentaroh.android.Utilities2.ContextMenu.CustomContextMenu;
-import com.sentaroh.android.Utilities2.Dialog.CommonDialog;
-import com.sentaroh.android.Utilities2.NotifyEvent;
-import com.sentaroh.android.Utilities2.SafFile3;
-import com.sentaroh.android.Utilities2.SafManager3;
-import com.sentaroh.android.Utilities2.SystemInfo;
-import com.sentaroh.android.Utilities2.ThemeUtil;
-import com.sentaroh.android.Utilities2.Widget.CustomViewPager;
-import com.sentaroh.android.Utilities2.Widget.CustomViewPagerAdapter;
+import com.sentaroh.android.Utilities3.AppUncaughtExceptionHandler;
+import com.sentaroh.android.Utilities3.ContextMenu.CustomContextMenu;
+import com.sentaroh.android.Utilities3.Dialog.CommonDialog;
+import com.sentaroh.android.Utilities3.NotifyEvent;
+import com.sentaroh.android.Utilities3.SafFile3;
+import com.sentaroh.android.Utilities3.SafManager3;
+import com.sentaroh.android.Utilities3.SystemInfo;
+import com.sentaroh.android.Utilities3.ThemeUtil;
+import com.sentaroh.android.Utilities3.Widget.CustomViewPager;
+import com.sentaroh.android.Utilities3.Widget.CustomViewPagerAdapter;
 
 import java.io.File;
 import java.io.IOException;
@@ -85,7 +86,7 @@ import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_PROFILE_NAM
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_LOCAL;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_POS_LOCAL;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_REMOTE;
-import static com.sentaroh.android.Utilities2.SafFile3.SAF_FILE_PRIMARY_UUID;
+import static com.sentaroh.android.Utilities3.SafFile3.SAF_FILE_PRIMARY_UUID;
 
 public class ActivityMain extends AppCompatActivity {
 	private final static String DEBUG_TAG = "SMBExplorer";
@@ -165,6 +166,7 @@ public class ActivityMain extends AppCompatActivity {
         for(String item:sil) mUtil.addDebugMsg(1,"I","   "+item);
         mUtil.addDebugMsg(1,"I","System Information end");
 
+        cleanupCacheFile();
 //        try {
 //            SafFile3 sf=mGp.safMgr.createSafFile(mGp.safMgr.getRootSafFile("1F0B-0E1B"), "/SMBSync2/Test.txt");
 ////            sf.delete();
@@ -177,6 +179,10 @@ public class ActivityMain extends AppCompatActivity {
 //        } catch(Exception e) {
 //            e.printStackTrace();
 //        }
+
+//        SafFile3 sf=new SafFile3(mContext, "");
+//        sf.getPath();
+//        mUtil.addDebugMsg(1,"I","path="+sf);
 
     }
 
@@ -324,6 +330,7 @@ public class ActivityMain extends AppCompatActivity {
         if (!isUiEnabled()) stopService();
         closeService();
         unsetCallbackListener();
+        cleanupCacheFile();
 	}
 
     private void closeService() {
@@ -499,7 +506,7 @@ public class ActivityMain extends AppCompatActivity {
 
 	private void createTabAndView() {
 		mGp.themeColorList = ThemeUtil.getThemeColorList(mActivity);
-//        getWindow().setNavigationBarColor(mGp.themeColorList.window_background_color_content);
+//        getWindow().setNavigationBarColor(Color.RED);
 
         mGp.tabHost =(TabHost)findViewById(android.R.id.tabhost);
         mGp.tabHost.setup();
@@ -791,6 +798,7 @@ public class ActivityMain extends AppCompatActivity {
 			@Override
 			public void negativeResponse(Context c,Object[] o) {}
 		});
+		ne.notifyToListener(true, null);
 		mGp.commonDlg.showCommonDialog(true,"W",getString(R.string.msgs_terminate_confirm),"",ne);
 		return;
 	}
@@ -892,7 +900,7 @@ public class ActivityMain extends AppCompatActivity {
                 mUtil.addDebugMsg(1,"I","Storage picker action="+data.getAction()+", path="+data.getData().getPath());
                 if (mGp.safMgr.isRootTreeUri(data.getData())) {
                     mGp.safMgr.addUuid(data.getData());
-                    mGp.safMgr.buildSafFileList();
+                    mGp.safMgr.refreshSafList();
                     mFileMgr.updateLocalDirSpinner();
                 } else {
                     NotifyEvent ntfy=new NotifyEvent(mContext);
@@ -985,5 +993,35 @@ public class ActivityMain extends AppCompatActivity {
         public String dialogMsgText="";
 
     }
+
+    private void cleanupCacheFile() {
+        File[] fl=mContext.getExternalCacheDirs();
+        if (fl!=null && fl.length>0) {
+            for(File cf:fl) {
+                File[] child_list=cf.listFiles();
+                for(File ch_item:child_list) if (!deleteCacheFile(ch_item)) break;
+            }
+        } else {
+            fl=mContext.getExternalCacheDirs();
+        }
+    }
+
+    private boolean deleteCacheFile(File del_item) {
+        boolean result=true;
+        if (del_item.isDirectory()) {
+            File[] child_list=del_item.listFiles();
+            for(File child_item:child_list) {
+                if (!deleteCacheFile(child_item)) {
+                    result=false;
+                    break;
+                }
+            }
+            if (result) result=del_item.delete();
+        } else {
+            result=del_item.delete();
+        }
+        return result;
+    }
+
 }
 

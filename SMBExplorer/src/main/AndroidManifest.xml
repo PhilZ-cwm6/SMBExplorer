@@ -11,6 +11,10 @@
 	<uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
+<!--    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>-->
+<!--    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION"/>-->
+
     <!--<uses-permission android:name="android.permission.CAMERA" />-->
     <!--<uses-permission android:name="android.permission.RECORD_AUDIO" />-->
 
@@ -58,7 +62,7 @@
         </activity>
 
         <activity
-            android:name="com.sentaroh.android.Utilities2.CrashReport"
+            android:name="com.sentaroh.android.Utilities3.CrashReport"
             android:process=":CrashReport"
             android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|layoutDirection|fontScale"
             android:screenOrientation="unspecified" android:launchMode="standard">
@@ -72,6 +76,18 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+
+                <action android:name="android.intent.action.MEDIA_MOUNTED"></action>
+                <data android:scheme="file" />
+
+                <action android:name="android.intent.action.MEDIA_EJECT"></action>
+                <data android:scheme="file" />
+                <action android:name="android.intent.action.MEDIA_REMOVED"></action>
+                <data android:scheme="file" />
+
+                <action android:name="android.intent.action.MEDIA_UNMOUNTED"></action>
+                <data android:scheme="file" />
+
             </intent-filter>
 
             <intent-filter>

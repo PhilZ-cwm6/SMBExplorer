@@ -99,7 +99,7 @@
 	                android:layout_gravity="center_vertical" 
 	                android:textAppearance="?android:attr/textAppearanceSmall" />
 
-	            <com.sentaroh.android.Utilities2.Widget.NonWordwrapTextView
+	            <com.sentaroh.android.Utilities3.Widget.NonWordwrapTextView
 	                android:id="@+id/explorer_filelist_local_filepath"
 	                android:layout_width="0dp"
 	                android:layout_height="wrap_content"

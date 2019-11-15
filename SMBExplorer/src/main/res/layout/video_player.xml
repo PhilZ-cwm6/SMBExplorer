@@ -24,7 +24,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
 
-        <com.sentaroh.android.Utilities2.Widget.NonWordwrapTextView
+        <com.sentaroh.android.Utilities3.Widget.NonWordwrapTextView
             android:id="@+id/video_player_dlg_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -1,4 +1,26 @@
 package com.sentaroh.android.SMBExplorer;
+/*
+The MIT License (MIT)
+Copyright (c) 2011-2019 Sentaroh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+*/
 
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
@@ -11,14 +33,19 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.usb.UsbManager;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.RemoteException;
+import android.os.SystemClock;
 
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
+import com.sentaroh.android.Utilities3.SafStorage3;
+
+import java.util.ArrayList;
 
 import static com.sentaroh.android.SMBExplorer.Constants.SERVICE_HEART_BEAT;
 
@@ -125,9 +152,34 @@ public class MainService extends Service {
         if (action.equals(Intent.ACTION_MEDIA_MOUNTED) ||
 //                action.equals(Intent.ACTION_MEDIA_EJECT) ||
 //                action.equals(Intent.ACTION_MEDIA_REMOVED) ||
+                action.equals(UsbManager.ACTION_USB_DEVICE_ATTACHED) ||
+                action.equals(UsbManager.ACTION_USB_DEVICE_DETACHED) ||
                 action.equals(Intent.ACTION_MEDIA_UNMOUNTED)) {
-            mGp.safMgr.buildSafFileList();
-            notifyToMediaStatusChanged();
+            Handler hndl=new Handler();
+            final String f_action=action;
+            Thread th=new Thread() {
+                @Override
+                public void run() {
+                    int prev_ls=mGp.safMgr.getSafStorageList().size();
+                    for(int i=0;i<100;i++) {
+                        mGp.safMgr.refreshSafList();
+                        ArrayList<SafStorage3> new_list=mGp.safMgr.getSafStorageList();
+                        if (prev_ls!=new_list.size()) {
+                            hndl.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    notifyToMediaStatusChanged();
+                                }
+                            });
+                            break;
+                        } else {
+                            SystemClock.sleep(300);
+                        }
+                        mUtil.addDebugMsg(1,"I","i="+i+", cnt="+prev_ls+", new="+new_list.size());
+                    }
+                }
+            };
+            th.start();
         } else if (action.equals(SERVICE_HEART_BEAT)) {
 //            mUtil.addDebugMsg(1,"I","onStartCommand entered, action="+action);
             setHeartBeat();
@@ -330,7 +382,7 @@ public class MainService extends Service {
 //                action.equals(Intent.ACTION_MEDIA_EJECT) ||
 //                action.equals(Intent.ACTION_MEDIA_REMOVED) ||
                     action.equals(Intent.ACTION_MEDIA_UNMOUNTED)) {
-                mGp.safMgr.buildSafFileList();
+                mGp.safMgr.refreshSafList();
                 notifyToMediaStatusChanged();
             }
         }

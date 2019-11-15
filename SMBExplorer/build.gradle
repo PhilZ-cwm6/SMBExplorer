@@ -81,7 +81,7 @@ dependencies {
 //    implementation files('libs/bcprov-jdk15on-1.61.jar')
 //    implementation files('libs/WrapperForSlf4j-1.0.2.jar')
 
-    implementation files('libs/Utilities2-1.0.1.aar')
+    implementation files('libs/Utilities3-1.0.1.aar')
 //    implementation 'com.android.support:appcompat-v7:27.1.0'
     implementation 'androidx.appcompat:appcompat:1.0.2'
 }
