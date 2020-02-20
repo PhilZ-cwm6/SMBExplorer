@@ -94,6 +94,7 @@ import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_LOCAL;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_POS_LOCAL;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_POS_REMOTE;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_REMOTE;
+import static com.sentaroh.android.Utilities3.SafManager3.SCOPED_STORAGE_SDK;
 
 public class FileManager {
     private static Logger log= LoggerFactory.getLogger(FileManager.class);
@@ -499,7 +500,7 @@ public class FileManager {
         else mGp.localFileListDirSpinner.setSelection(0);
 
         if (mGp.localStorageList.size()==0) {
-            if (Build.VERSION.SDK_INT>=29) {
+            if (Build.VERSION.SDK_INT>=SCOPED_STORAGE_SDK) {
                 mActivity.requestStoragePermissions();
             }
         }
@@ -1632,7 +1633,7 @@ public class FileManager {
                                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                                 Uri uri=null;
                                 SafFile3 dl=new SafFile3(mContext, mGp.internalRootDirectory+"/Download/"+item.getName());
-                                if (Build.VERSION.SDK_INT>=29) {
+                                if (Build.VERSION.SDK_INT>=SCOPED_STORAGE_SDK) {
                                     if (dl.isSafFile()) {
                                         uri=dl.getUri();
                                     } else {
@@ -2729,6 +2730,12 @@ public class FileManager {
     private void createSafApiFileList(final SafFile3 rf, boolean dir_only, final String url, final NotifyEvent p_ntfy) {
 //        Thread.dumpStack();
         mUtil.addDebugMsg(1,"I","createSafApiFileList file list create started. dir=" + url);
+
+        File lf=new File(url);
+        if (lf.canRead()) {
+            createFileApiFileList(dir_only, url, p_ntfy);
+            return;
+        }
 
         final ThreadCtrl tc = new ThreadCtrl();
         tc.setEnabled();

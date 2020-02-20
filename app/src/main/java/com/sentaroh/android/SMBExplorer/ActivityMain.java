@@ -66,6 +66,7 @@ import com.sentaroh.android.Utilities3.SafFile3;
 import com.sentaroh.android.Utilities3.SafManager3;
 import com.sentaroh.android.Utilities3.SystemInfo;
 import com.sentaroh.android.Utilities3.ThemeUtil;
+import com.sentaroh.android.Utilities3.Widget.CustomTabContentView;
 import com.sentaroh.android.Utilities3.Widget.CustomViewPager;
 import com.sentaroh.android.Utilities3.Widget.CustomViewPagerAdapter;
 
@@ -95,6 +96,7 @@ import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_LOCAL;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_POS_LOCAL;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_REMOTE;
 import static com.sentaroh.android.Utilities3.SafFile3.SAF_FILE_PRIMARY_UUID;
+import static com.sentaroh.android.Utilities3.SafManager3.SCOPED_STORAGE_SDK;
 
 public class ActivityMain extends AppCompatActivity {
 	private final static String DEBUG_TAG = "SMBExplorer";
@@ -194,6 +196,22 @@ public class ActivityMain extends AppCompatActivity {
 //        sf.getPath();
 //        mUtil.addDebugMsg(1,"I","path="+sf);
 
+//        File lf=new File("/storage/0C0A-2B14");//"/storage/emulated/0");
+////        File lf=new File("/storage/emulated/0");
+//        File[] fl=lf.listFiles();
+//        for(File item:fl) mUtil.addDebugMsg(1, "I", "File="+item.getPath());
+//        try {
+//            File nf=new File(lf.getPath()+"/DCIM/new_file");
+//            nf.createNewFile();
+//            nf.setLastModified(0l);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+//        SafFile3 sf=new SafFile3(mContext, "/storage/1EFB-3213");
+//        SafFile3 sf=new SafFile3(mContext, "/storage/emulated/0/Downloads");
+//        SafFile3[] fl=sf.listFiles();
+//        for(SafFile3 item:fl) mUtil.addDebugMsg(1, "I", "File="+item.getPath());
     }
 
     private class MyUncaughtExceptionHandler extends AppUncaughtExceptionHandler {
@@ -439,6 +457,8 @@ public class ActivityMain extends AppCompatActivity {
         mFileMgr.setEmptyFolderView();
 		
 		refreshOptionMenu();
+        final LinearLayout main_view=(LinearLayout)findViewById(R.id.main_screen_view);
+        main_view.setVisibility(LinearLayout.VISIBLE);
 
 		Handler hndl=new Handler();
 		hndl.postDelayed(new Runnable(){
@@ -447,7 +467,7 @@ public class ActivityMain extends AppCompatActivity {
                 mFileMgr.setSpinnerSelectionEnabled(true);
             }
         },100);
-	}
+    }
 	
 	private void saveViewStatus(ViewSaveArea vsa) {
 		if (mGp.currentTabName.equals(SMBEXPLORER_TAB_LOCAL)) {
@@ -658,7 +678,7 @@ public class ActivityMain extends AppCompatActivity {
     }
 
     private boolean isLegacyExternalStoragePermissionGranted() {
-        if (Build.VERSION.SDK_INT<23 || Build.VERSION.SDK_INT>=29) return true;
+        if (Build.VERSION.SDK_INT<23 || Build.VERSION.SDK_INT>=SCOPED_STORAGE_SDK) return true;
         if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) return true;
         else return false;
     }
@@ -666,7 +686,7 @@ public class ActivityMain extends AppCompatActivity {
     private final int REQUEST_PERMISSIONS_WRITE_EXTERNAL_STORAGE = 1;
     private boolean mLegacyStoragePermissionInprocess=false;
     private void checkRequiredPermissions() {
-        if (Build.VERSION.SDK_INT>=29 || mLegacyStoragePermissionInprocess) return;
+        if (Build.VERSION.SDK_INT>=SCOPED_STORAGE_SDK || mLegacyStoragePermissionInprocess) return;
         if (Build.VERSION.SDK_INT >= 23) {
             mUtil.addDebugMsg(1, "I", "Prermission WriteExternalStorage=" + checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) +
                     ", WakeLock=" + checkSelfPermission(Manifest.permission.WAKE_LOCK)
@@ -921,15 +941,23 @@ public class ActivityMain extends AppCompatActivity {
         for(SafManager3.StorageVolumeInfo svi:vol_list) {
             if (svi.uuid.equals(uuid)) {
                 if (Build.VERSION.SDK_INT>=24) {
-                    if (Build.VERSION.SDK_INT>=29) {
+                    if (Build.VERSION.SDK_INT>=SCOPED_STORAGE_SDK) {
                         intent=svi.volume.createOpenDocumentTreeIntent();
                         startActivityForResult(intent, REQUEST_CODE_STORAGE_ACCESS);
                         break;
                     } else {
-                        if (!svi.uuid.equals(SAF_FILE_PRIMARY_UUID)) {
-                            intent=svi.volume.createAccessIntent(null);
-                            startActivityForResult(intent, REQUEST_CODE_STORAGE_ACCESS);
-                            break;
+                        if (Build.VERSION.SDK_INT>=29) {
+                            if (!svi.uuid.equals(SAF_FILE_PRIMARY_UUID)) {
+                                intent=svi.volume.createOpenDocumentTreeIntent();
+                                startActivityForResult(intent, REQUEST_CODE_STORAGE_ACCESS);
+                                break;
+                            }
+                        } else {
+                            if (!svi.uuid.equals(SAF_FILE_PRIMARY_UUID)) {
+                                intent=svi.volume.createAccessIntent(null);
+                                startActivityForResult(intent, REQUEST_CODE_STORAGE_ACCESS);
+                                break;
+                            }
                         }
                     }
                 } else {

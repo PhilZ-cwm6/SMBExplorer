@@ -43,6 +43,7 @@ import android.os.RemoteException;
 import android.os.SystemClock;
 
 import com.sentaroh.android.SMBExplorer.Log.LogUtil;
+import com.sentaroh.android.Utilities3.SafManager3;
 import com.sentaroh.android.Utilities3.SafStorage3;
 
 import java.util.ArrayList;
@@ -160,22 +161,25 @@ public class MainService extends Service {
             Thread th=new Thread() {
                 @Override
                 public void run() {
-                    int prev_ls=mGp.safMgr.getSafStorageList().size();
-                    for(int i=0;i<100;i++) {
-                        mGp.safMgr.refreshSafList();
-                        ArrayList<SafStorage3> new_list=mGp.safMgr.getSafStorageList();
-                        if (prev_ls!=new_list.size()) {
-                            hndl.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    notifyToMediaStatusChanged();
-                                }
-                            });
-                            break;
-                        } else {
-                            SystemClock.sleep(300);
+                    int prev_stor_cnt=mGp.safMgr.getLastStorageVolumeInfo().size();
+                    if (prev_stor_cnt!=SafManager3.getStorageVolumeInfo(mContext).size()) {
+                        int prev_ls=mGp.safMgr.getSafStorageList().size();
+                        for(int i=0;i<50;i++) {
+                            mGp.safMgr.refreshSafList();
+                            ArrayList<SafStorage3> new_list=mGp.safMgr.getSafStorageList();
+                            if (prev_ls!=new_list.size()) {
+                                hndl.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        notifyToMediaStatusChanged();
+                                    }
+                                });
+                                break;
+                            } else {
+                                SystemClock.sleep(300);
+                            }
+//                        mUtil.addDebugMsg(1,"I","i="+i+", cnt="+prev_ls+", new="+new_list.size());
                         }
-                        mUtil.addDebugMsg(1,"I","i="+i+", cnt="+prev_ls+", new="+new_list.size());
                     }
                 }
             };
@@ -376,14 +380,20 @@ public class MainService extends Service {
         @SuppressLint({ "Wakelock", "NewApi"})
         @Override
         final public void onReceive(Context c, Intent in) {
-            String action = in.getAction();
+            final String action = in.getAction();
             mUtil.addDebugMsg(1,"I","Media Action="+action+", Path="+in.getDataString());
             if (action.equals(Intent.ACTION_MEDIA_MOUNTED) ||
-//                action.equals(Intent.ACTION_MEDIA_EJECT) ||
-//                action.equals(Intent.ACTION_MEDIA_REMOVED) ||
+                action.equals(Intent.ACTION_MEDIA_EJECT) ||
+                action.equals(Intent.ACTION_MEDIA_REMOVED) ||
                     action.equals(Intent.ACTION_MEDIA_UNMOUNTED)) {
-                mGp.safMgr.refreshSafList();
-                notifyToMediaStatusChanged();
+                Thread th=new Thread() {
+                    @Override
+                    public void run() {
+                        mGp.safMgr.refreshSafList();
+                        notifyToMediaStatusChanged();
+                    }
+                };
+                th.start();
             }
         }
     }
