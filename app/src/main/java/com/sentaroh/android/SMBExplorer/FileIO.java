@@ -67,7 +67,7 @@ import static com.sentaroh.android.SMBExplorer.Constants.FILEIO_PARM_REMOTE_CREA
 import static com.sentaroh.android.SMBExplorer.Constants.FILEIO_PARM_REMOTE_DELETE;
 import static com.sentaroh.android.SMBExplorer.Constants.FILEIO_PARM_REMOTE_RENAME;
 
-public class FileIo extends Thread {
+public class FileIO extends Thread {
 	private final static String DEBUG_TAG = "SMBExplorer";
 	private NotifyEvent notifyEvent ;
 	private ThreadCtrl fileioThreadCtrl;
@@ -80,8 +80,8 @@ public class FileIo extends Thread {
 	private LogUtil mLogUtil=null;
 	
 	// @Override
-	public FileIo(GlobalParameters gp, int op_cd,
-			ArrayList<FileIoLinkParm> alp, ThreadCtrl tc, NotifyEvent ne, Context cc, String lmp) {
+	public FileIO(GlobalParameters gp, int op_cd,
+				  ArrayList<FileIoLinkParm> alp, ThreadCtrl tc, NotifyEvent ne, Context cc, String lmp) {
 		
 		mGp=GlobalWorkArea.getGlobalParameters(cc);
 		fileioThreadCtrl=tc;
@@ -936,7 +936,8 @@ public class FileIo extends Thread {
     private boolean makeLocalDirsByDirectoryPath(String targetPath) {
         boolean result=false;
         SafFile3 sf=new SafFile3(mContext, targetPath);
-        result=sf.mkdirs();
+        if (!sf.exists()) result=sf.mkdirs();
+        else result=true;
         return result;
     }
 

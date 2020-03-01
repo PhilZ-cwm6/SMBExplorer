@@ -702,9 +702,9 @@ public class FileManager {
     }
 
     private void processLocalUpButton() {
-        MountPointHistoryItem mphi=getMountPointHistoryItem(mGp.currentLocalStorage.storage_id);
+        final MountPointHistoryItem mphi=getMountPointHistoryItem(mGp.currentLocalStorage.storage_id);
         mphi.directory_history.remove(mphi.directory_history.size()-1);
-        DirectoryHistoryItem n_dhi=mphi.directory_history.get(mphi.directory_history.size()-1);
+        final DirectoryHistoryItem n_dhi=mphi.directory_history.get(mphi.directory_history.size()-1);
 
         if (mphi.directory_history.size()==1) {
             mGp.localFileListUpBtn.setEnabled(false);
@@ -723,13 +723,13 @@ public class FileManager {
                 setFileListPathName(mGp.localFileListPath,"",mGp.localDirectory);
                 setEmptyFolderView();
                 mGp.localFileListView.setSelectionFromTop(n_dhi.pos_fv, n_dhi.pos_top);
-//                mUiHandler.post(new Runnable(){
-//                    @Override
-//                    public void run() {
-//                        mGp.localFileListView.setSelectionFromTop(n_dhi.pos_fv, n_dhi.pos_top);
-////                        log.info("restored fv="+n_dhi.pos_fv+", top="+n_dhi.pos_top);
-//                    }
-//                });
+                mUiHandler.post(new Runnable(){
+                    @Override
+                    public void run() {
+                        mGp.localFileListView.setSelectionFromTop(n_dhi.pos_fv, n_dhi.pos_top);
+//                        log.info("restored fv="+n_dhi.pos_fv+", top="+n_dhi.pos_top);
+                    }
+                });
 //                mGp.localFileListView.setSelectionFromTop(n_dhi.pos_fv, n_dhi.pos_top);
 //                log.info("restored fv="+n_dhi.pos_fv+", top="+n_dhi.pos_top);
             }
@@ -1812,7 +1812,7 @@ public class FileManager {
             }
         });
 
-        FileIo th = new FileIo(mGp, op_cd, alp, mTcFileIoTask, ntfy, mContext, lmp);
+        FileIO th = new FileIO(mGp, op_cd, alp, mTcFileIoTask, ntfy, mContext, lmp);
         mTcFileIoTask.initThreadCtrl();
 		th.setName("FileIo");
         th.start();

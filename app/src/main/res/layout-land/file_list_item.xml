@@ -22,7 +22,7 @@
         android:layout_gravity="center_vertical"
         android:layout_weight="1" >
 
-        <TextView
+		<com.sentaroh.android.Utilities3.Widget.NonWordwrapTextView
             android:id="@+id/file_list_name"
             android:layout_width="0dp"
             android:layout_weight="1"
