@@ -41,7 +41,7 @@
                 android:layout_gravity="center_vertical"
                 android:layout_marginLeft="5dp" />
 
-            <TextView
+            <com.sentaroh.android.Utilities3.Widget.NonWordwrapTextView
                 android:id="@+id/explorer_filelist_local_progress_msg"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"

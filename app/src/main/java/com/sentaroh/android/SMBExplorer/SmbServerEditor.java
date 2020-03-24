@@ -435,7 +435,7 @@ public class SmbServerEditor {
                     for(FileListItem item:sfl) rows.add(item.getName());
                     Collections.sort(rows);
 
-                    final ListView lv = (ListView) dialog.findViewById(android.R.id.list);
+                    final ListView lv = (ListView) dialog.findViewById(R.id.list_view);
                     lv.setAdapter(new ArrayAdapter<String>(mActivity, android.R.layout.simple_list_item_single_choice, rows));
                     lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
                     lv.setScrollingCacheEnabled(false);

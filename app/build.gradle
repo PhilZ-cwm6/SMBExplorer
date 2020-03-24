@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 29
-    buildToolsVersion "30.0.0-rc1"//"29.0.3"
+    buildToolsVersion "30.0.0-rc2"//"29.0.3"
 
     defaultConfig {
         applicationId "com.sentaroh.android.SMBExplorer"
@@ -83,5 +83,5 @@ dependencies {
 
     implementation files('libs/Utilities3-1.0.1.aar')
 //    implementation 'com.android.support:appcompat-v7:27.1.0'
-    implementation 'androidx.appcompat:appcompat:1.0.2'
+    implementation 'androidx.appcompat:appcompat:1.1.0'
 }
