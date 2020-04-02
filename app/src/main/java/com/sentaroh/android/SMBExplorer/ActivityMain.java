@@ -58,6 +58,8 @@ import androidx.core.content.FileProvider;
 import androidx.viewpager.widget.ViewPager;
 
 import com.sentaroh.android.SMBExplorer.Log.LogManagementFragment;
+import com.sentaroh.android.SMBExplorer.BuildConfig;
+
 import com.sentaroh.android.Utilities3.AppUncaughtExceptionHandler;
 import com.sentaroh.android.Utilities3.ContextMenu.CustomContextMenu;
 import com.sentaroh.android.Utilities3.Dialog.CommonDialog;

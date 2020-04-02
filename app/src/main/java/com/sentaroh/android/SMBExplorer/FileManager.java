@@ -53,6 +53,8 @@ import android.widget.TextView;
 
 import androidx.core.content.FileProvider;
 
+import com.sentaroh.android.SMBExplorer.BuildConfig;
+
 import com.sentaroh.android.Utilities3.ContextMenu.CustomContextMenu;
 import com.sentaroh.android.Utilities3.ContextMenu.CustomContextMenuItem;
 import com.sentaroh.android.Utilities3.Dialog.CommonDialog;
