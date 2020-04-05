@@ -76,6 +76,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.TimeZone;
 
 import static com.sentaroh.android.SMBExplorer.Constants.FILEIO_PARM_COPY_LOCAL_TO_LOCAL;
 import static com.sentaroh.android.SMBExplorer.Constants.FILEIO_PARM_COPY_LOCAL_TO_REMOTE;
@@ -2666,6 +2667,8 @@ public class FileManager {
             @Override
             public void run() {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                SimpleDateFormat sdf_ut = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                sdf_ut.setTimeZone(TimeZone.getTimeZone("UTC"));
                 ArrayList<FileListItem> dir = new ArrayList<FileListItem>();
                 ArrayList<FileListItem> fls = new ArrayList<FileListItem>();
                 File sf = new File(url);
@@ -2685,14 +2688,26 @@ public class FileManager {
                                 } else {
                                     tfi=createFileApiFilelistItem("", ff, 0, 0, false, url);
                                     fls.add(tfi);
+                                    long et=ff.lastModified();
                                 }
                                 if (mUtil.getLogLevel()>=3) {
-                                    mUtil.addDebugMsg(3,"I","File :" + tfi.getName()+", "+
-                                            "length: " + tfi.getLength()+", "+
-                                            "Lastmod: " + sdf.format(tfi.getLastModified())+", "+
-                                            "Lastmod: " + tfi.getLastModified()+", "+
-                                            "isdir: " + tfi.isDir()+", "+
-                                            "path: " + tfi.getPath()+", ");
+                                    long et=tfi.getLastModified();
+                                    String ut=sdf_ut.format(et);
+                                    if (tfi.isDir()) {
+                                        mUtil.addDebugMsg(3,"I","Directory=" + tfi.getName()+", "+
+                                                "length=" + tfi.getLength()+", "+
+                                                "Last mod Local=" + sdf.format(tfi.getLastModified())+", "+
+                                                "Last mod UTC=" + ut+", "+
+                                                "Last mod EPOC=" + et+", "+
+                                                "path=" + tfi.getPath()+", ");
+                                    } else {
+                                        mUtil.addDebugMsg(3,"I","File=" + tfi.getName()+", "+
+                                                "length=" + tfi.getLength()+", "+
+                                                "Last mod Local=" + sdf.format(tfi.getLastModified())+", "+
+                                                "Last mod UTC=" + ut+", "+
+                                                "Last mod EPOC=" + et+", "+
+                                                "path=" + tfi.getPath()+", ");
+                                    }
                                 }
                             } else {
                                 tfi=createFileApiFilelistItem("", ff, 0, 0, false, url);
@@ -2758,6 +2773,8 @@ public class FileManager {
             @Override
             public void run(){
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                SimpleDateFormat sdf_ut = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                sdf_ut.setTimeZone(TimeZone.getTimeZone("UTC"));
 //                long b_time=System.currentTimeMillis();
                 ArrayList<FileListItem> dir = new ArrayList<FileListItem>();
                 ArrayList<FileListItem> fls = new ArrayList<FileListItem>();
@@ -2780,6 +2797,23 @@ public class FileManager {
                                 } else {
                                     tfi= createSafApiFilelistItem("", ff, 0, 0, false, url, cpc);
                                     fls.add(tfi);
+                                }
+                                long et=tfi.getLastModified();
+                                String ut=sdf_ut.format(et);
+                                if (tfi.isDir()) {
+                                    mUtil.addDebugMsg(3,"I","Directory=" + tfi.getName()+", "+
+                                            "length=" + tfi.getLength()+", "+
+                                            "Last mod Local=" + sdf.format(tfi.getLastModified())+", "+
+                                            "Last mod UTC=" + ut+", "+
+                                            "Last mod EPOC=" + et+", "+
+                                            "path=" + tfi.getPath()+", ");
+                                } else {
+                                    mUtil.addDebugMsg(3,"I","File=" + tfi.getName()+", "+
+                                            "length=" + tfi.getLength()+", "+
+                                            "Last mod Local=" + sdf.format(tfi.getLastModified())+", "+
+                                            "Last mod UTC=" + ut+", "+
+                                            "Last mod EPOC=" + et+", "+
+                                            "path=" + tfi.getPath()+", ");
                                 }
 //                                mUtil.addDebugMsg(1,"I","fp="+ff.getPath()+", elapse="+(System.currentTimeMillis()-b_time_s));
                             }

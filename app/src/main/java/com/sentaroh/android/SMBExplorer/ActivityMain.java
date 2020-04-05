@@ -90,8 +90,11 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.TimeZone;
 
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_PROFILE_NAME;
 import static com.sentaroh.android.SMBExplorer.Constants.SMBEXPLORER_TAB_LOCAL;
@@ -228,6 +231,23 @@ public class ActivityMain extends AppCompatActivity {
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
+
+//        String[] tzid_list=TimeZone.getAvailableIDs();
+//        for(String id:tzid_list) {
+//            int raw_offset=TimeZone.getTimeZone(id).getRawOffset();
+//            int dst_offset=TimeZone.getTimeZone(id).getDSTSavings();
+////            mUtil.addDebugMsg(1, "I", "ID="+id+", raw="+raw_offset+", dst="+dst_offset+
+////                    ", offset="+TimeZone.getTimeZone(id).getOffset(System.currentTimeMillis())+
+////                    ", indst="+TimeZone.getTimeZone(id).inDaylightTime(new Date(System.currentTimeMillis()))+
+////                    ", usedst="+TimeZone.getTimeZone(id).useDaylightTime()+
+////                    ", observdst="+TimeZone.getTimeZone(id).observesDaylightTime());
+//            if (TimeZone.getTimeZone(id).useDaylightTime())
+//                mUtil.addDebugMsg(1, "I", "dst="+dst_offset+", ID="+id+
+//                    ", indst="+TimeZone.getTimeZone(id).inDaylightTime(new Date(System.currentTimeMillis()))+
+//                    ", usedst="+TimeZone.getTimeZone(id).useDaylightTime());
+//
+//        }
+
     }
 
     private class MyUncaughtExceptionHandler extends AppUncaughtExceptionHandler {
