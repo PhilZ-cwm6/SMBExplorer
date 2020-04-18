@@ -22,6 +22,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -46,6 +47,7 @@ import java.util.Collections;
 import java.util.Comparator;
 
 public class FileListAdapter extends BaseAdapter {
+	private Activity mActivity;
 	private Context mContext;
 	private ArrayList<FileListItem>mDataItems=null;
 	private boolean mSingleSelectMode=false;
@@ -61,18 +63,20 @@ public class FileListAdapter extends BaseAdapter {
 	
 	private ThemeColorList mThemeColorList;
 
-	public FileListAdapter(Context context) {
-		mContext = context;
+	public FileListAdapter(Activity a) {
+		mActivity = a;
+		mContext=mActivity.getApplicationContext();
 		mDataItems=new ArrayList<FileListItem>();
-		mThemeColorList= ThemeUtil.getThemeColorList(mContext);
+		mThemeColorList= ThemeUtil.getThemeColorList(mActivity);
 	};
 
-	public FileListAdapter(Context context, boolean singleSelectMode, boolean showLastModified) {
-		mContext = context;
+	public FileListAdapter(Activity a, boolean singleSelectMode, boolean showLastModified) {
+		mActivity = a;
+		mContext=mActivity.getApplicationContext();
 		this.mSingleSelectMode=singleSelectMode;
 		this.mShowLastModified=showLastModified;
 		mDataItems=new ArrayList<FileListItem>();
-		mThemeColorList=ThemeUtil.getThemeColorList(mContext);
+		mThemeColorList=ThemeUtil.getThemeColorList(mActivity);
 	};
 	
 	@Override
@@ -205,7 +209,7 @@ public class FileListAdapter extends BaseAdapter {
 		 	
             View v = convertView;
             if (v == null) {
-                LayoutInflater vi = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                LayoutInflater vi = (LayoutInflater) mActivity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 v = vi.inflate(R.layout.file_list_item, parent, false);
                 holder=new ViewHolder();
 

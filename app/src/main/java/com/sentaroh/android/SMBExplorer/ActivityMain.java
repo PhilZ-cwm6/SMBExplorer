@@ -142,11 +142,11 @@ public class ActivityMain extends AppCompatActivity {
 //        StrictMode.setVmPolicy(builder.build());
         super.onCreate(savedInstanceState);
 
-		mContext=this;
-		mActivity=this;
+		mContext=ActivityMain.this.getApplicationContext();
+		mActivity=ActivityMain.this;
         mGp=GlobalWorkArea.getGlobalParameters(mContext);
 
-        mUtil=mGp.mUtil=new CommonUtilities(mContext, "Main", mGp);
+        mUtil=mGp.mUtil=new CommonUtilities(mActivity, "Main", mGp);
 		setContentView(R.layout.main);
         mUiHandler=new Handler();
 		mActionBar = getSupportActionBar();
@@ -156,11 +156,11 @@ public class ActivityMain extends AppCompatActivity {
         mGp.smbConfigList = SmbServerUtil.createSmbServerConfigList(mContext, mGp,false, null);
 
         if (ccMenu ==null) ccMenu = new CustomContextMenu(getResources(),getSupportFragmentManager());
-		mGp.commonDlg=new CommonDialog(mContext, getSupportFragmentManager());
+		mGp.commonDlg=new CommonDialog(mActivity, getSupportFragmentManager());
         mUtil.addDebugMsg(1, "I", "onCreate entered");
 
         MyUncaughtExceptionHandler myUncaughtExceptionHandler = new MyUncaughtExceptionHandler();
-		myUncaughtExceptionHandler.init(mContext, myUncaughtExceptionHandler);
+		myUncaughtExceptionHandler.init(mActivity, myUncaughtExceptionHandler);
 
 //		String npe=null;
 //		npe.length();
@@ -247,7 +247,12 @@ public class ActivityMain extends AppCompatActivity {
 //                    ", usedst="+TimeZone.getTimeZone(id).useDaylightTime());
 //
 //        }
-
+//        File lf=new File("/storage/sdcard1/test.txt");
+//        try {
+//            lf.createNewFile();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     private class MyUncaughtExceptionHandler extends AppUncaughtExceptionHandler {
@@ -627,7 +632,7 @@ public class ActivityMain extends AppCompatActivity {
 
         mGp.tabHost.setOnTabChangedListener(new OnTabChange());
 
-        LayoutInflater vi = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        LayoutInflater vi = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         mGp.mLocalView=(LinearLayout)vi.inflate(R.layout.main_local_tab, null);
         mGp.mRemoteView=(LinearLayout)vi.inflate(R.layout.main_remote_tab, null);
 
@@ -894,7 +899,7 @@ public class ActivityMain extends AppCompatActivity {
 	}
 
 	private void confirmTerminateApplication() {
-		NotifyEvent ne=new NotifyEvent(this);
+		NotifyEvent ne=new NotifyEvent(mContext);
 		ne.setListener(new NotifyEvent.NotifyEventListener() {
 			@Override
 			public void positiveResponse(Context c,Object[] o) {
@@ -959,7 +964,7 @@ public class ActivityMain extends AppCompatActivity {
 	}
 
 	private void invokeSettingsActivity() {
-		Intent intent = new Intent(this, ActivitySetting.class);
+		Intent intent = new Intent(mContext, ActivitySetting.class);
 		startActivityForResult(intent,0);
 	}
 

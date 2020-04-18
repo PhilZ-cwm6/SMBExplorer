@@ -1358,7 +1358,7 @@ public class FileManager {
                     else intent.setType("*/*");
 
                     try {
-                        mContext.startActivity(intent);
+                        mActivity.startActivity(intent);
                     } catch(Exception e) {
                         mGp.commonDlg.showCommonDialog(false, "E", "Share error", "startActivity() failed at shareItem() for send item. message="+e.getMessage(), null);
                     }
@@ -1369,7 +1369,7 @@ public class FileManager {
         ccMenu.addMenuItem("Copy("+item.getName()+")", R.drawable.context_button_copy).setOnClickListener(new CustomContextMenuItem.CustomContextMenuOnClickListener() {
             @Override
             public void onClick(CharSequence menuTitle) {
-                FileListAdapter tfla=new FileListAdapter(mContext);
+                FileListAdapter tfla=new FileListAdapter(mActivity);
                 ArrayList<FileListItem>dl=new ArrayList<FileListItem>();
                 FileListItem n_item=item.clone();
                 n_item.setChecked(true);
@@ -1382,7 +1382,7 @@ public class FileManager {
         ccMenu.addMenuItem("Cut("+item.getName()+")", R.drawable.context_button_cut).setOnClickListener(new CustomContextMenuItem.CustomContextMenuOnClickListener() {
             @Override
             public void onClick(CharSequence menuTitle) {
-                FileListAdapter tfla=new FileListAdapter(mContext);
+                FileListAdapter tfla=new FileListAdapter(mActivity);
                 ArrayList<FileListItem>dl=new ArrayList<FileListItem>();
                 FileListItem n_item=item.clone();
                 n_item.setChecked(true);
@@ -1395,7 +1395,7 @@ public class FileManager {
         ccMenu.addMenuItem("Rename("+item.getName()+")", R.drawable.context_button_rename).setOnClickListener(new CustomContextMenuItem.CustomContextMenuOnClickListener() {
             @Override
             public void onClick(CharSequence menuTitle) {
-                FileListAdapter tfla=new FileListAdapter(mContext);
+                FileListAdapter tfla=new FileListAdapter(mActivity);
                 ArrayList<FileListItem>dl=new ArrayList<FileListItem>();
                 FileListItem n_item=item.clone();
                 n_item.setChecked(true);
@@ -1408,7 +1408,7 @@ public class FileManager {
         ccMenu.addMenuItem("Delete("+item.getName()+")", R.drawable.context_button_trash).setOnClickListener(new CustomContextMenuItem.CustomContextMenuOnClickListener() {
             @Override
             public void onClick(CharSequence menuTitle) {
-                FileListAdapter tfla=new FileListAdapter(mContext);
+                FileListAdapter tfla=new FileListAdapter(mActivity);
                 ArrayList<FileListItem>dl=new ArrayList<FileListItem>();
                 FileListItem n_item=item.clone();
                 n_item.setChecked(true);
@@ -1603,7 +1603,7 @@ public class FileManager {
                     }
                 }
                 intent.setDataAndType(uri, mt);
-                mContext.startActivity(intent);
+                mActivity.startActivity(intent);
             } catch(ActivityNotFoundException e) {
                 showDialogMsg("E", "File viewer can not be found.", "File name="+item.getName()+", MimeType="+mt);
             }
@@ -1652,7 +1652,7 @@ public class FileManager {
                                     }
                                 }
                                 intent.setDataAndType(uri, mime_type);
-                                mContext.startActivity(intent);
+                                mActivity.startActivity(intent);
                             } catch(Exception e) {
                                 showDialogMsg("E", "File viewer can not be found.", ", error="+e.getMessage()+", File name="+item.getName()+", MimeType="+mime_type);
                             }
