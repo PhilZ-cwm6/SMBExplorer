@@ -184,29 +184,26 @@ public class ActivityMain extends AppCompatActivity {
         mUtil.addDebugMsg(1,"I","System Information end");
 
         cleanupCacheFile();
-//        try {
-//            SafFile3 sf=mGp.safMgr.createSafFile(mGp.safMgr.getRootSafFile("1F0B-0E1B"), "/SMBSync2/Test.txt");
-////            sf.delete();
-////            sf=mGp.safMgr.createSafFile(mGp.safMgr.getRootSafFile(SAF_FILE_PRIMARY_UUID), "/SMBSync3/Test.txt");
-//            OutputStream os=sf.getOutputStream();
-////            os.write("zxnxczn,.xzcnxzcn.zxcn,.zxcn,.xczn,.xn,.xczn,.xn,.xcn,.zxc,.nzxc-01234567890\n".getBytes());
-//            os.write("zxnxczn,.xzcnxzcn.zxcn,.zxcn,.xczn,.xn,.xczn,.xn,.xcn,.zxc,.nzxc\n".getBytes());
-//            os.flush();
-//            os.close();
-//        } catch(Exception e) {
-//            e.printStackTrace();
-//        }
-
-//        SafFile3 sf=new SafFile3(mContext, "");
-//        sf.getPath();
-//        mUtil.addDebugMsg(1,"I","path="+sf);
 
 //        File lf=new File("/storage/0C0A-2B14");//"/storage/emulated/0");
-////        File lf=new File("/storage/emulated/0");
+//        File lf=new File("/storage/emulated/0");
 //        File[] fl=lf.listFiles();
 //        for(File item:fl) mUtil.addDebugMsg(1, "I", "File="+item.getPath());
 //        try {
 //            File nf=new File(lf.getPath()+"/DCIM/new_file");
+//            nf.delete();
+//            nf.createNewFile();
+//            nf.setLastModified(0l);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        File sdlf=new File("/storage/10EE-0718");
+//        File[] sdfl=sdlf.listFiles();
+//        for(File item:sdfl) mUtil.addDebugMsg(1, "I", "File="+item.getPath());
+//        try {
+//            File nf=new File(sdlf.getPath()+"/DCIM/new_file");
+//            nf.delete();
 //            nf.createNewFile();
 //            nf.setLastModified(0l);
 //        } catch (IOException e) {

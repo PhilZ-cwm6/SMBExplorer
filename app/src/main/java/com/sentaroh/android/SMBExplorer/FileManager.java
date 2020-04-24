@@ -2643,12 +2643,14 @@ public class FileManager {
 //                long b_time=System.currentTimeMillis();
                 File[] cfl=sd.listFiles();
 //                mUtil.addDebugMsg(1,"I","list children name="+sd.getName()+", elapsed="+(System.currentTimeMillis()-b_time));
-                for(File cf:cfl) {
-                    if (cf.isDirectory()) {
-                        if (process_sub_directories)
-                            dir_size+= getFileApiAllFileSizeInDirectory(cf, process_sub_directories);
-                    } else {
-                        dir_size+=cf.length();
+                if (cfl!=null) {
+                    for(File cf:cfl) {
+                        if (cf.isDirectory()) {
+                            if (process_sub_directories)
+                                dir_size+= getFileApiAllFileSizeInDirectory(cf, process_sub_directories);
+                        } else {
+                            dir_size+=cf.length();
+                        }
                     }
                 }
             } else {
